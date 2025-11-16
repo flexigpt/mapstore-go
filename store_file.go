@@ -37,10 +37,15 @@ type StringEncoderDecoder interface {
 
 // FileKeyEncDecGetter: given the path so far, if applicable, returns a StringEncoderDecoder
 // It encodes decodes: The key at the path i.e last part of the path array.
+// Key encoders are applied after values. If a key decoder fails (e.g., invalid base64), loading fails with a
+// descriptive error for visibility.
 type FileKeyEncDecGetter func(pathSoFar []string) StringEncoderDecoder
 
 // FileValueEncDecGetter: given the path so far, if applicable, returns a EncoderDecoder.
 // It encodes decodes: Value at the key i.e value at last part of the path array.
+// Value encoders are applied to values first; when encoding, their output is base64‑encoded for storage.
+// On decode, if the stored value is not a string, it is left unchanged (tolerant mode).
+// Provide your `WithValueEncDecGetter` to control which paths get encoded.
 type FileValueEncDecGetter func(pathSoFar []string) IOEncoderDecoder
 
 // Operation is the kind of mutation that happened on a file or a key.
@@ -74,6 +79,11 @@ type FileEvent struct {
 type FileListener func(FileEvent)
 
 // MapFileStore is a file-backed implementation of a thread-safe key-value store.
+// Concurrency:
+//   - Uses optimistic CAS (os.Stat snapshot) plus atomic rename for writes.
+//   - Across processes this is best-effort; if the file changes between the
+//     CAS check and rename, last-writer-wins may occur.
+//   - SetAll retries on conflict; DeleteFile returns ErrFileConflict on change.
 type MapFileStore struct {
 	filename    string
 	data        map[string]any

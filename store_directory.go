@@ -273,6 +273,9 @@ type pageTokenData struct {
 }
 
 // ListFiles lists files according to the config and page token.
+// - When filtering partitions via `ListingConfig.FilterPartitions`, unreadable or missing partitions are skipped.
+// - When not filtering (listing all), an unreadable partition is a hard error from the provider read.
+// - `FilenamePrefix` filters files by basename prefix within each partition, after sorting.
 func (mds *MapDirectoryStore) ListFiles(
 	config ListingConfig,
 	pageToken string,

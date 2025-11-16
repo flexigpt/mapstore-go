@@ -35,13 +35,13 @@ MapStore is a local, filesystem‑backed map database with pluggable codecs (JSO
 
 - **File naming**
 
-  - Filestore is opaque to filenames, allowing for any naming scheme.
-  - Dirstore uses a `FileKey` based design to allow for control of encoding and decoding of data inside file names for efficient traversal.
+  - The file store is opaque to filenames, allowing for any naming scheme.
+  - The directory store uses a `FileKey` based design to allow for control of encoding and decoding of data inside file names for efficient traversal.
   - _UUIDv7 based filename provider_ - use the inbuilt UUIDv7 based provider to derive and use, collision free and semantic data based filenames.
 
 - **File change events**
 
-  - Custom listeners can be plugged into `filestore` to observe file events.
+  - Custom listeners can be plugged into the file store to observe file events.
   - Pluggable _Full text search_
     - Inbuilt, pure go, sqlite backed (via [glebarez driver](https://github.com/glebarez/go-sqlite) + [modernc sqlite](https://pkg.go.dev/modernc.org/sqlite)), fts engine.
     - Pluggable iterator utility `ftsengine.SyncIterToFTS` for efficient, incremental index updates.
@@ -61,19 +61,20 @@ go get github.com/ppipada/mapstore-go
 package main
 
 import (
-"fmt"
-"log"
+  "fmt"
+  "log"
 
-    "github.com/ppipada/mapstore-go/filestore"
-
+  "github.com/ppipada/mapstore-go"
+  "github.com/ppipada/mapstore-go/jsonencdec"
 )
 
 func main() {
-store, err := filestore.NewMapFileStore(
-"config.json",
-map[string]any{"env": "dev"},
-filestore.WithCreateIfNotExists(true),
-)
+  store, err := mapstore.NewMapFileStore(
+    "config.json",
+    map[string]any{"env": "dev"},
+    jsonencdec.JSONEncoderDecoder{},
+    mapstore.WithCreateIfNotExists(true),
+  )
 if err != nil {
 log.Fatal(err)
 }
@@ -106,25 +107,40 @@ import (
   "log"
   "time"
 
-  "github.com/ppipada/mapstore-go/dirstore"
+  "github.com/ppipada/mapstore-go"
+  "github.com/ppipada/mapstore-go/dirpartition"
+  "github.com/ppipada/mapstore-go/jsonencdec"
 )
 
 func main() {
-  mds, err := dirstore.NewMapDirectoryStore(
+  mds, err := mapstore.NewMapDirectoryStore(
     "./data",
     true,
-    dirstore.WithPartitionProvider(&dirstore.MonthPartitionProvider{
-      TimeFn: func(key dirstore.FileKey) (time.Time, error) {
-        return time.Now(), nil
-      },
-    }),
+    &dirstore.MonthPartitionProvider{
+    TimeFn: func(fileKey dirstore.FileKey) (time.Time, error) {
+      u, err := uuidv7filename.Parse(fileKey.FileName)
+      if err != nil {
+        return time.Time{}, err
+      }
+      return u.Time, nil
+    },
+    jsonencdec.JSONEncoderDecoder{},
   )
   if err != nil {
     log.Fatal(err)
   }
   defer mds.CloseAll()
 
-  fileKey := dirstore.FileKey{FileName: "profile.json"}
+  id, err := uuidv7filename.NewUUIDv7String()
+  if err != nil {
+    log.Fatal(err)
+  }
+  info, err := uuidv7filename.Build(id, "profile", "json")
+    if err != nil {
+      return nil, err
+    }
+
+  fileKey := mapstore.FileKey{FileName: info.FileName}
   if err := mds.SetFileData(fileKey, map[string]any{"name": "Ada"}); err != nil {
     log.Fatal(err)
   }
@@ -182,15 +198,32 @@ func main() {
 
 </details>
 
+## Packages
+
+- `github.com/ppipada/mapstore-go` — file and directory stores, options, events, and types.
+- `github.com/ppipada/mapstore-go/jsonencdec` — JSON file encoder/decoder.
+- `github.com/ppipada/mapstore-go/keyringencdec` — per-value encryption (AES‑256‑GCM; key in OS keyring).
+- `github.com/ppipada/mapstore-go/dirpartition` — partitioning strategies (month/no-op).
+- `github.com/ppipada/mapstore-go/uuidv7filename` — UUIDv7‑backed filename helpers.
+- `github.com/ppipada/mapstore-go/ftsengine` — FTS5 engine and sync helpers.
+
+## Concurrency Model
+
+MapStore uses optimistic concurrency when writing files:
+
+- Writes create a deep copy of the in‑memory map, encode it (value encoding first, then key encoding), and atomically rename a temp file into place.
+- Before writing, the store compares current file `stat` to a remembered snapshot. If it changed, `SetAll` and `DeleteFile` return a conflict error. `SetAll` retries a few times automatically; key‑level mutations (`SetKey`/`DeleteKey`) honor the `AutoFlush` setting and propagate conflict errors from the internal flush.
+- This is best‑effort across processes. Two writers racing between the pre‑write CAS check and `rename` may still result in last‑writer‑wins. If you need stronger cross‑process guarantees, coordinate at the application level.
+
+## Keyring Notes
+
+- `keyringencdec.EncryptedStringValueEncoderDecoder` uses the OS keyring to store the AES‑256 key.
+- In headless or container environments, ensure a compatible keyring backend is available, or avoid using the keyring‑based encoder.
+
 ## Development
 
 - Formatting follows `gofumpt` and `golines` via `golangci-lint`, which is also used for linting. All rules are in [.golangci.yml](.golangci.yml).
-
-- Useful scripts are defined in `taskfile.yml` (requires [Task](https://taskfile.dev/)):
-
-  - `task lint` - run `golangci-lint`.
-  - `task test` - run `go test ./...`.
-  - `task lt` - lint then test.
+- Useful scripts are defined in `taskfile.yml` (requires [Task](https://taskfile.dev/)).
 
 ## License
 

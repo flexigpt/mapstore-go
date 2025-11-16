@@ -386,9 +386,12 @@ func (e *Engine) BatchList(
 	return rows, nextToken, nil
 }
 
-// Search returns one page of results and, if more results exist,
-// an opaque token for the next page.
-// The query is treated as a search literal and not a fts5 expression.
+// Search executes an FTS5 query with pagination.
+// If more results exist, an opaque token is returned for the next page. The tokens are bound to the query string.
+// The raw query string is cleaned to an OR-joined token list:
+//   - Non-alphanumeric characters are ignored.
+//   - Single-letter non-digit tokens are dropped.
+//   - Duplicate tokens are removed.
 func (e *Engine) Search(
 	ctx context.Context,
 	query string,

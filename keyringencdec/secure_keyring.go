@@ -1,3 +1,6 @@
+// Package keyringencdec provides a value encoder/decoder backed by the OS keyring.
+// It encrypts string values with AES-256-GCM and persists the key in the OS keyring.
+// Ensure a compatible keyring backend is available in headless/container environments.
 package keyringencdec
 
 import (
