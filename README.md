@@ -1,5 +1,6 @@
 # MapStore for Go
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ppipada/mapstore-go)](https://goreportcard.com/report/github.com/ppipada/mapstore-go)
 [![lint](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml)
 [![test](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml)
