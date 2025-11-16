@@ -1,5 +1,9 @@
 # MapStore for Go
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/ppipada/mapstore-go)](https://goreportcard.com/report/github.com/ppipada/mapstore-go)
+[![lint](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml)
+[![test](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml)
+
 MapStore is a local, filesystem‑backed map database with pluggable codecs (JSON or custom), optional per‑key encryption via the OS keyring, and optional full‑text search via SQLite FTS5.
 
 ## Features
