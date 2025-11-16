@@ -30,7 +30,15 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Unlock keyring
+        uses: t1m0thyj/unlock-keyring@v1
+
       - name: test
         run: |
           go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
+
+      - name: check test coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          config: ./.testcoverage.yml
