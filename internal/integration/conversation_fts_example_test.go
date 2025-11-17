@@ -162,7 +162,7 @@ func ExampleMapDirectoryStore_full() {
 	}
 
 	// Build the index once over the directory.
-	if err := ftsengine.SyncDirToFTS(ctx, engine, baseDir, "mtime", 1000, processFile); err != nil {
+	if _, err := ftsengine.SyncDirToFTS(ctx, engine, baseDir, "mtime", 1000, processFile); err != nil {
 		fmt.Println("error:", err)
 		return
 	}

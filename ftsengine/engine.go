@@ -31,9 +31,21 @@ type Engine struct {
 	hsh string
 	// Serializes write-queries.
 	mu sync.Mutex
+
+	logger *slog.Logger
 }
 
-func NewEngine(cfg Config) (*Engine, error) {
+// Option is a functional option for configuring the FTSEngine.
+type Option func(*Engine)
+
+// WithLogger adds a logger to use for the fts engine.
+func WithLogger(logger *slog.Logger) Option {
+	return func(e *Engine) {
+		e.logger = logger
+	}
+}
+
+func NewEngine(cfg Config, opts ...Option) (*Engine, error) {
 	err := validateConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -59,8 +71,14 @@ func NewEngine(cfg Config) (*Engine, error) {
 	db.SetMaxIdleConns(2)
 
 	e := &Engine{db: db, cfg: cfg}
+	for _, opt := range opts {
+		opt(e)
+	}
 	e.hsh = schemaChecksum(e.cfg, tokenizerOptions)
-	slog.Info("ftsengine bootstrap", "dbPath", dataSourceName)
+	if e.logger != nil {
+		e.logger.Info("ftsengine bootstrap", "dbPath", dataSourceName)
+	}
+
 	if err := e.bootstrap(context.Background()); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -498,14 +516,22 @@ func (e *Engine) bootstrap(ctx context.Context) error {
 	_ = e.db.QueryRowContext(ctx, sqlSelectMetaHash).Scan(&stored)
 
 	// Create / replace FTS virtual table.
-	slog.Debug("fst-engine bootstrap", "previousChecksum", stored, "newChecksum", e.hsh)
+	if e.logger != nil {
+		e.logger.Info("fst-engine bootstrap", "previousChecksum", stored, "newChecksum", e.hsh)
+	}
+
 	if stored != e.hsh {
 		// Schema changed, clear previous rows.
 		if stored != "" {
-			slog.Info("fst-engine bootstrap: config checksum mismatch, delete all rows.")
+			if e.logger != nil {
+				e.logger.Info("fst-engine bootstrap: config checksum mismatch, delete all rows.")
+			}
 			_, _ = e.db.ExecContext(ctx, fmt.Sprintf(sqlDeleteAllRows, quote(e.cfg.Table)))
 		}
-		slog.Info("fst-engine bootstrap: config checksum mismatch, create virtual table again.")
+		if e.logger != nil {
+			e.logger.Info("fst-engine bootstrap: config checksum mismatch, create virtual table again.")
+		}
+
 		_, _ = e.db.ExecContext(ctx, fmt.Sprintf(sqlDropTable, quote(e.cfg.Table)))
 
 		var cols []string

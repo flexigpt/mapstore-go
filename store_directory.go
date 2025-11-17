@@ -57,6 +57,8 @@ type MapDirectoryStore struct {
 	// OpenStores caches open MapFileStore instances per file path.
 	openStores map[string]*MapFileStore
 	openMu     sync.Mutex
+
+	logger *slog.Logger
 }
 
 // DirOption is a functional option for configuring the MapDirectoryStore.
@@ -73,6 +75,13 @@ func WithDirPageSize(size int) DirOption {
 func WithDirFileListeners(ls ...FileListener) DirOption {
 	return func(mds *MapDirectoryStore) {
 		mds.listeners = append(mds.listeners, ls...)
+	}
+}
+
+// WithDirLogger adds a logger to use for the map dir store.
+func WithDirLogger(logger *slog.Logger) DirOption {
+	return func(mds *MapDirectoryStore) {
+		mds.logger = logger
 	}
 }
 
@@ -200,6 +209,7 @@ func (mds *MapDirectoryStore) OpenFile(
 		mds.fileEncoderDecoder,
 		WithCreateIfNotExists(createIfNotExists),
 		WithFileListeners(mds.listeners...),
+		WithFileLogger(mds.logger),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file store for %s: %w", fileKey.FileName, err)
@@ -347,7 +357,10 @@ func (mds *MapDirectoryStore) ListFiles(
 			token.FilenamePrefix,
 		)
 		if err != nil && errors.Is(err, errCannotReadPartitionDir) {
-			slog.Debug("skipping listing partition", "error", err)
+			if mds.logger != nil {
+				mds.logger.Debug("skipping listing partition", "error", err)
+			}
+
 			token.PartitionFilterPageToken.PartitionIndex++
 		} else if err != nil {
 			return nil, "", err

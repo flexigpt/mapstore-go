@@ -3,7 +3,6 @@ package ftsengine
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -131,7 +130,7 @@ func TestSyncDirToFTS_TableDriven(t *testing.T) {
 					writeJSONFile(t, full, map[string]any{"title": f.Title})
 				}
 				// First sync.
-				err := SyncDirToFTS(
+				_, err := SyncDirToFTS(
 					t.Context(),
 					engine,
 					tmpDir,
@@ -175,7 +174,7 @@ func TestSyncDirToFTS_TableDriven(t *testing.T) {
 					engine = engine2
 				}
 				// Second sync.
-				err = SyncDirToFTS(
+				_, err = SyncDirToFTS(
 					t.Context(),
 					engine,
 					tmpDir,
@@ -259,7 +258,7 @@ func TestSyncDirToFTS_ErrorCases(t *testing.T) {
 		txtFile := filepath.Join(tmpDir, "note.txt")
 		_ = os.WriteFile(txtFile, []byte("hello"), 0o600)
 
-		err = SyncDirToFTS(t.Context(), engine, tmpDir, "mtime", 2, testProcessFile)
+		_, err = SyncDirToFTS(t.Context(), engine, tmpDir, "mtime", 2, testProcessFile)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -386,13 +385,11 @@ func TestFTSEngine_Search(t *testing.T) {
 	})
 }
 
-// Helper: processFile for test (like your consumer).
 func testProcessFile(
 	ctx context.Context,
 	baseDir, fullPath string,
 	getPrevCmp GetPrevCmp,
 ) (SyncDecision, error) {
-	slog.Info("processing", "file", fullPath)
 	if !strings.HasSuffix(fullPath, ".json") {
 		return SyncDecision{Skip: true}, nil
 	}

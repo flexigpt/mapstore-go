@@ -3,7 +3,6 @@ package ftsengine
 import (
 	"context"
 	"io/fs"
-	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,6 +26,20 @@ type SyncDecision struct {
 // currently stored for a specific ID ("" == not indexed yet).
 type GetPrevCmp func(id string) string
 
+// Iterate is the generic producer contract.
+// GetPrev      lets the producer look at the current compareColumn value.
+// Emit(dec)    must be invoked exactly once for every document that belongs to this dataset.
+type Iterate func(getPrev GetPrevCmp, emit func(SyncDecision) error) error
+
+type SyncStats struct {
+	TimeTaken time.Duration
+	Processed int
+	Upserted  int
+	Unchanged int
+	Skipped   int
+	Deleted   int
+}
+
 // ProcessFile is the directory-walker callback.
 type ProcessFile func(
 	ctx context.Context,
@@ -41,7 +54,7 @@ func SyncDirToFTS(
 	compareColumn string,
 	batchSize int,
 	processFile ProcessFile,
-) error {
+) (stats *SyncStats, err error) {
 	// Factory that converts the WalkDir stream into SyncDecision events.
 	iter := func(getPrev GetPrevCmp, emit func(SyncDecision) error) error {
 		return filepath.WalkDir(baseDir,
@@ -70,11 +83,6 @@ func SyncDirToFTS(
 	)
 }
 
-// Iterate is the generic producer contract.
-// GetPrev      lets the producer look at the current compareColumn value.
-// Emit(dec)    must be invoked exactly once for every document that belongs to this dataset.
-type Iterate func(getPrev GetPrevCmp, emit func(SyncDecision) error) error
-
 // SyncIterToFTS. Belongs(id) must return true for all rows owned by this producer so that vanished rows can be deleted.
 func SyncIterToFTS(
 	ctx context.Context,
@@ -83,14 +91,12 @@ func SyncIterToFTS(
 	batchSize int,
 	iter Iterate,
 	belongs func(id string) bool,
-) error {
+) (stats *SyncStats, err error) {
 	if batchSize <= 0 {
 		batchSize = 1000
 	}
 	const listPage = 10_000
 	start := time.Now()
-
-	slog.Info("fts-sync start", "cmpCol", compareColumn)
 
 	// Fetch current state (ID -> compareColumn value).
 	existing := make(map[string]string)
@@ -105,7 +111,7 @@ func SyncIterToFTS(
 			listPage,
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, row := range part {
 			existing[row.ID] = row.Values[compareColumn]
@@ -165,10 +171,10 @@ func SyncIterToFTS(
 	}
 
 	if err := iter(getPrev, emit); err != nil {
-		return err
+		return nil, err
 	}
 	if err := flush(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Delete documents that vanished from the producers dataset.
@@ -183,18 +189,16 @@ func SyncIterToFTS(
 	}
 	if len(toDelete) != 0 {
 		if err := engine.BatchDelete(ctx, toDelete); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	// Done - statistics.
-	slog.Info("fts-sync done",
-		"took", time.Since(start),
-		"processed", nProcessed,
-		"upserted", nUpserted,
-		"unchanged", nUnchanged,
-		"skipped", nSkipped,
-		"deleted", len(toDelete),
-	)
-	return nil
+	return &SyncStats{
+		TimeTaken: time.Since(start),
+		Processed: nProcessed,
+		Upserted:  nUpserted,
+		Unchanged: nUnchanged,
+		Skipped:   nSkipped,
+		Deleted:   len(toDelete),
+	}, nil
 }

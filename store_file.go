@@ -99,6 +99,8 @@ type MapFileStore struct {
 	getValueEncDec FileValueEncDecGetter
 	getKeyEncDec   FileKeyEncDecGetter
 	listeners      []FileListener
+
+	logger *slog.Logger
 }
 
 // FileOption defines a function type that applies a configuration option to the MapFileStore.
@@ -142,6 +144,11 @@ func WithCreateIfNotExists(createIfNotExists bool) FileOption {
 // WithFileListeners registers one or more listeners during store creation.
 func WithFileListeners(ls ...FileListener) FileOption {
 	return func(s *MapFileStore) { s.listeners = append(s.listeners, ls...) }
+}
+
+// WithFileLogger adds a logger to use for the map file store.
+func WithFileLogger(logger *slog.Logger) FileOption {
+	return func(s *MapFileStore) { s.logger = logger }
 }
 
 // NewMapFileStore initializes a new MapFileStore.
@@ -622,16 +629,17 @@ func (s *MapFileStore) fireEvent(e FileEvent) {
 		func(cb FileListener) {
 			defer func() {
 				if r := recover(); r != nil {
-					// Log.Printf("filestore: listener panic: %v", r).
-					slog.Error(
-						"filestore listener panic",
-						"err",
-						r,
-						"event",
-						e,
-						"stack",
-						string(debug.Stack()),
-					)
+					if s.logger != nil {
+						s.logger.Error(
+							"filestore listener panic",
+							"err",
+							r,
+							"event",
+							e,
+							"stack",
+							string(debug.Stack()),
+						)
+					}
 				}
 			}()
 			cb(e)
