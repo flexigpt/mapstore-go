@@ -52,15 +52,13 @@ tasks:
     cmds:
       - golangci-lint run ./... -v
 
-  test-cover:
-    cmds:
-      - go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
-      - go-test-coverage --config=./.testcoverage.yml
-
   test:
     cmds:
-      - go test ./...
+      # The count=1 is needed to disable test caching. this is so that coverage doesnt show stale data.
+      # Issue: https://github.com/golang/go/issues/74873
+      - go test -count=1 -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+      - go-test-coverage --config=./.testcoverage.yml
 
   lt:
     cmds:

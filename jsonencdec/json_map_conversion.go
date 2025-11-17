@@ -1,4 +1,4 @@
-package encdecutil
+package jsonencdec
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ func MapToStructWithJSONTags(data map[string]any, out any) error {
 		return errors.New("input data cannot be nil")
 	}
 
-	if _, err := RequirePointerToStruct(out, "output parameter"); err != nil {
+	if _, err := requirePointerToStruct(out, "output parameter"); err != nil {
 		return err
 	}
 
@@ -51,33 +51,8 @@ func MapToStructWithJSONTags(data map[string]any, out any) error {
 	return nil
 }
 
-// EncodeToJSONRaw encodes any value to json.RawMessage.
-// No typed method here as value being of a type doesnt really affect its functionality.
-func EncodeToJSONRaw(value any) (json.RawMessage, error) {
-	data, err := json.Marshal(value)
-	if err != nil {
-		return nil, fmt.Errorf("encode JSON: %w", err)
-	}
-	return json.RawMessage(data), nil
-}
-
-// DecodeJSONRaw decodes a json.RawMessage into a typed value T, disallowing unknown fields and rejecting trailing data.
-// If raw is empty, or only whitespace, it returns the zero value of T.
-func DecodeJSONRaw[T any](raw json.RawMessage) (T, error) {
-	var zero T
-	if isBlankJSON(raw) {
-		return zero, nil
-	}
-
-	var v T
-	if err := decodeBytes(raw, &v, true, true); err != nil {
-		return zero, err
-	}
-	return v, nil
-}
-
-func RequirePointerToStruct(p any, name string) (reflect.Value, error) {
-	rv, err := RequireNonNilPointer(p, name)
+func requirePointerToStruct(p any, name string) (reflect.Value, error) {
+	rv, err := requireNonNilPointer(p, name)
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -87,7 +62,7 @@ func RequirePointerToStruct(p any, name string) (reflect.Value, error) {
 	return rv, nil
 }
 
-func RequireNonNilPointer(p any, name string) (reflect.Value, error) {
+func requireNonNilPointer(p any, name string) (reflect.Value, error) {
 	if p == nil {
 		return reflect.Value{}, fmt.Errorf("%s cannot be nil", name)
 	}
@@ -131,8 +106,4 @@ func requireNoTrailing(dec *json.Decoder) error {
 		return fmt.Errorf("trailing data validation: %w", err)
 	}
 	return nil
-}
-
-func isBlankJSON(b []byte) bool {
-	return len(bytes.TrimSpace(b)) == 0
 }

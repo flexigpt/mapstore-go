@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-
-	"github.com/ppipada/mapstore-go/internal/encdecutil"
 )
 
 type JSONEncoderDecoder struct{}
@@ -34,7 +32,7 @@ func (d JSONEncoderDecoder) Decode(r io.Reader, value any) error {
 		return errors.New("reader cannot be nil")
 	}
 
-	if _, err := encdecutil.RequireNonNilPointer(value, "value"); err != nil {
+	if _, err := requireNonNilPointer(value, "value"); err != nil {
 		return err
 	}
 

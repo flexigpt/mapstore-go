@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ppipada/mapstore-go/internal/encdecutil"
 )
 
 func TestJSONEncoderDecoder_Encode(t *testing.T) {
@@ -231,7 +229,7 @@ func TestStructWithJSONTagsToMap(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := encdecutil.StructWithJSONTagsToMap(tt.input)
+			got, err := StructWithJSONTagsToMap(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("StructWithJSONTagsToMap() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -353,7 +351,7 @@ func TestMapToStructWithJSONTags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := encdecutil.MapToStructWithJSONTags(tt.input, tt.output)
+			err := MapToStructWithJSONTags(tt.input, tt.output)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MapToStructWithJSONTags() error = %v, wantErr %v", err, tt.wantErr)
 				return
