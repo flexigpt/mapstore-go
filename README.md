@@ -90,3 +90,10 @@ MapStore uses optimistic concurrency when writing files:
 
 - Formatting follows `gofumpt` and `golines` via `golangci-lint`, which is also used for linting. All rules are in [.golangci.yml](.golangci.yml).
 - Useful scripts are defined in `taskfile.yml`; requires [Task](https://taskfile.dev/).
+
+## License
+
+Copyright (c) 2026 - Present - Pankaj Pipada
+
+All source code in this repository, unless otherwise noted, is licensed under the MIT License.
+See [LICENSE](./LICENSE) for details.
