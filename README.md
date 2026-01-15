@@ -7,6 +7,16 @@
 
 MapStore is a local, filesystem‑backed map database with pluggable codecs (JSON or custom), optional per‑key encryption via the OS keyring, and optional full‑text search via SQLite FTS5.
 
+- [Features](#features)
+- [Capabilities and Extensibility](#capabilities-and-extensibility)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Packages](#packages)
+- [Concurrency Model](#concurrency-model)
+- [Keyring Notes](#keyring-notes)
+- [Development](#development)
+- [License](#license)
+
 ## Features
 
 - File store
