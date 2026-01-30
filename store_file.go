@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ppipada/mapstore-go/internal/fileutil"
 	"github.com/ppipada/mapstore-go/internal/maputil"
 )
 
@@ -601,7 +602,7 @@ func (store *MapFileStore) flushUnlocked() error {
 		_ = os.Chmod(tmpName, store.lastStat.Mode().Perm())
 	}
 
-	if err := os.Rename(tmpName, store.filename); err != nil {
+	if err := fileutil.RenameReplace(tmpName, store.filename); err != nil {
 		_ = os.Remove(tmpName)
 		return err
 	}

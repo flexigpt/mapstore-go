@@ -63,7 +63,11 @@ func NewEngine(cfg Config, opts ...Option) (*Engine, error) {
 		cfg.DBFileName,
 	)
 
-	db, err := sql.Open("sqlite", dataSourceName+"?busy_timeout=5000&_pragma=journal_mode(WAL)")
+	dsn := dataSourceName
+	if cfg.BaseDir != MemoryDBBaseDir {
+		dsn = dataSourceName + "?busy_timeout=5000&_pragma=journal_mode(WAL)"
+	}
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}

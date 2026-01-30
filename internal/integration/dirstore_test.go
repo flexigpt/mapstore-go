@@ -1405,6 +1405,23 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	})
 }
 
+func TestMapDirectoryStore_RejectsPathSeparatorsInFileName(t *testing.T) {
+	base := t.TempDir()
+	mds, _ := mapstore.NewMapDirectoryStore(
+		base,
+		true,
+		&dirpartition.NoPartitionProvider{},
+		jsonencdec.JSONEncoderDecoder{},
+	)
+
+	for _, name := range []string{"a/b.json", `a\b.json`} {
+		_, err := mds.OpenFile(mapstore.FileKey{FileName: name}, true, map[string]any{})
+		if err == nil {
+			t.Fatalf("expected error for filename %q", name)
+		}
+	}
+}
+
 func baseName(rel string) string {
 	return path.Base(normalizeRel(rel))
 }

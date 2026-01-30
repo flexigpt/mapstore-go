@@ -1316,6 +1316,27 @@ func TestEvents_PanicListener_DoesNotBreakNextListeners(t *testing.T) {
 	}
 }
 
+func TestMapFileStore_FlushTwice(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "a.json")
+
+	st, err := mapstore.NewMapFileStore(
+		f, map[string]any{}, jsonencdec.JSONEncoderDecoder{},
+		mapstore.WithCreateIfNotExists(true),
+		mapstore.WithFileAutoFlush(true),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := st.SetKey([]string{"k"}, "v1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetKey([]string{"k"}, "v2"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func openStore(p string, opts ...mapstore.FileOption) *mapstore.MapFileStore {
 	s, err := mapstore.NewMapFileStore(
 		p,

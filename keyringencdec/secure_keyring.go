@@ -12,8 +12,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-
-	"github.com/zalando/go-keyring"
 )
 
 // EncryptedStringValueEncoderDecoder uses AES-256-GCM + base64 for encoding/decoding
@@ -22,6 +20,7 @@ type EncryptedStringValueEncoderDecoder struct {
 	service  string
 	username string
 	debug    bool
+	ks       KeyStore
 }
 
 // Option is a functional option for configuring EncryptedStringValueEncoderDecoder.
@@ -31,6 +30,12 @@ type Option func(*EncryptedStringValueEncoderDecoder)
 func WithDebug(debug bool) Option {
 	return func(e *EncryptedStringValueEncoderDecoder) {
 		e.debug = debug
+	}
+}
+
+func WithKeyStore(ks KeyStore) Option {
+	return func(e *EncryptedStringValueEncoderDecoder) {
+		e.ks = ks
 	}
 }
 
@@ -45,6 +50,7 @@ func NewEncryptedStringValueEncoderDecoder(
 	e := &EncryptedStringValueEncoderDecoder{
 		service:  service,
 		username: username,
+		ks:       osKeyStore{},
 	}
 	for _, opt := range opts {
 		if opt != nil {
@@ -180,7 +186,7 @@ func (e *EncryptedStringValueEncoderDecoder) getKey() ([]byte, error) {
 	const keySize = 32
 
 	// Attempt to retrieve the key from the keyring.
-	keyStr, err := keyring.Get(e.service, e.username)
+	keyStr, err := e.ks.Get(e.service, e.username)
 
 	switch {
 	case err == nil:
@@ -193,7 +199,7 @@ func (e *EncryptedStringValueEncoderDecoder) getKey() ([]byte, error) {
 			return nil, fmt.Errorf("unexpected key length: got %d, want %d", len(key), keySize)
 		}
 		return key, nil
-	case errors.Is(err, keyring.ErrNotFound):
+	case errors.Is(err, ErrNotFound):
 		// Generate a new 32-byte key if not found.
 		key := make([]byte, keySize)
 		if _, err := io.ReadFull(rand.Reader, key); err != nil {
@@ -201,7 +207,7 @@ func (e *EncryptedStringValueEncoderDecoder) getKey() ([]byte, error) {
 		}
 		// Store the key in the keyring.
 		keyStr := base64.StdEncoding.EncodeToString(key)
-		if err := keyring.Set(e.service, e.username, keyStr); err != nil {
+		if err := e.ks.Set(e.service, e.username, keyStr); err != nil {
 			return nil, fmt.Errorf("failed to store key in keyring: %w", err)
 		}
 		return key, nil

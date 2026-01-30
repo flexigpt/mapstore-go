@@ -451,12 +451,17 @@ func (mds *MapDirectoryStore) validateAndGetFilePath(fileKey FileKey) (string, e
 	if fileKey.FileName == "" {
 		return "", fmt.Errorf("invalid request for file: %s", fileKey.FileName)
 	}
-	// Check if the filename contains any directory components.
-	if strings.Contains(fileKey.FileName, string(os.PathSeparator)) {
-		return "", fmt.Errorf(
-			"filename should not contain directory components: %s",
-			fileKey.FileName,
-		)
+	name := fileKey.FileName
+	// Consistent across platforms: reject any slash style.
+	if strings.ContainsAny(name, `/\`) {
+		return "", fmt.Errorf("filename should not contain directory components: %s", name)
+	}
+	// Reject Windows volume/UNC patterns (keeps join behavior safe everywhere).
+	if vol := filepath.VolumeName(name); vol != "" {
+		return "", fmt.Errorf("filename must not contain volume name %q: %s", vol, name)
+	}
+	if name == "." || name == ".." {
+		return "", fmt.Errorf("invalid filename: %s", name)
 	}
 	partitionDir, err := mds.partitionProvider.GetPartitionDir(fileKey)
 	if err != nil {

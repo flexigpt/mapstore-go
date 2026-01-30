@@ -7,11 +7,56 @@ import (
 	"encoding/base64"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 )
 
-// Mock implementations to simulate error conditions and control key retrieval in tests.
-// Since we cannot use external packages, we'll simulate key operations.
+type memKeyStore struct {
+	mu sync.Mutex
+	m  map[string]string
+}
+
+func (s *memKeyStore) Get(service, username string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := service + ":" + username
+	v, ok := s.m[k]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return v, nil
+}
+
+func (s *memKeyStore) Set(service, username, secret string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.m[service+":"+username] = secret
+	return nil
+}
+
+func TestDecodeWithCustomKeyStore(t *testing.T) {
+	ks := &memKeyStore{m: map[string]string{}}
+	encoderDecoder, err := NewEncryptedStringValueEncoderDecoder("keyringencdec", "user", WithKeyStore(ks))
+	if err != nil {
+		t.Fatalf("getEncoderDecoder failed: %v", err)
+	}
+
+	// Prepare a valid encoded string.
+	originalValue := "Test string for non-string interface"
+	encodedBuffer := &bytes.Buffer{}
+	err = encoderDecoder.Encode(encodedBuffer, originalValue)
+	if err != nil {
+		t.Fatalf("Encode failed: %v", err)
+	}
+
+	// Decode dest that is not a string.
+	// Initialize with a non-string type.
+	decodedValue := 123
+	err = encoderDecoder.Decode(encodedBuffer, &decodedValue)
+	if err == nil {
+		t.Errorf("Expected error when decoding into a non-string interface, but got none")
+	}
+}
 
 func TestEncodeDecode(t *testing.T) {
 	testCases := []struct {
