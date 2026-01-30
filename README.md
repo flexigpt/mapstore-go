@@ -20,7 +20,6 @@ MapStore is a local, filesystem‑backed map database with pluggable codecs (JSO
 ## Features
 
 - File store
-
   - It keeps a `map[string]any` in sync with files on disk, the file can be encoded as JSON (inbuilt), or any format using a custom file encoder/decoder.
   - It is a thread-safe map store with atomic file writes and optimistic concurrency.
   - Pluggable codecs for both keys and values inside the map, including an encrypted string encoder backed by `github.com/zalando/go-keyring`.
@@ -29,33 +28,28 @@ MapStore is a local, filesystem‑backed map database with pluggable codecs (JSO
 
 - Directory store: A convenience manager that partitions data across subdirectories and paginates listings.
 
-- Pure Go implementation with no cgo, compatible with Go 1.25+.
+- Pure Go (no cgo), cross-platform (Linux/macOS/Windows), Go 1.25+.
 
 ## Capabilities and Extensibility
 
 - **File encoders**
-
   - Supply your own `IOEncoderDecoder` via `WithFileEncoderDecoder`.
   - _JSON file encode/decode_ - use the inbuilt `jsonencdec.JSONEncoderDecoder` to encode/decode files as JSON.
 
 - **Encode key or value at sub-path**
-
   - Override encoding of specific keys or values with `WithKeyEncDecGetter` or `WithValueEncDecGetter`.
   - _Value encryption_ - use the inbuilt `keyringencdec.EncryptedStringValueEncoderDecoder` to transparently store sensitive string values through the OS keyring.
 
 - **Directory Partitioning**
-
   - Swap in your own `PartitionProvider` to control directory layout.
   - _Month based partitioning_ - use the inbuilt `dirpartition.MonthPartitionProvider` to split files across month based directories.
 
 - **File naming**
-
   - The file store is opaque to filenames, allowing for any naming scheme.
   - The directory store uses a `FileKey` based design to allow for control of encoding and decoding of data inside file names for efficient traversal.
   - _UUIDv7 based filename provider_ - use the inbuilt UUIDv7 based provider to derive and use, collision free and semantic data based filenames.
 
 - **File change events**
-
   - Custom listeners can be plugged into the file store to observe file events.
   - Pluggable _Full text search_
     - Inbuilt, pure go, sqlite backed (via [glebarez driver](https://github.com/glebarez/go-sqlite) + [modernc sqlite](https://pkg.go.dev/modernc.org/sqlite)), fts engine.
