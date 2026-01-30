@@ -197,8 +197,8 @@ func NewMapFileStore(
 
 // Flush writes the current data to the file. No event is emitted for flush.
 func (store *MapFileStore) Flush() error {
-	store.mu.RLock()
-	defer store.mu.RUnlock()
+	store.mu.Lock()
+	defer store.mu.Unlock()
 	return store.flushUnlocked()
 }
 
@@ -225,7 +225,10 @@ func (store *MapFileStore) GetAll(forceFetch bool) (map[string]any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to stat file: %w", err)
 		}
-		if !isSameFileInfo(stat, store.lastStat) {
+		store.mu.RLock()
+		lStat := store.lastStat
+		store.mu.RUnlock()
+		if !isSameFileInfo(stat, lStat) {
 			if err := store.load(); err != nil {
 				return nil, fmt.Errorf("failed to reload file: %w", err)
 			}
@@ -235,9 +238,8 @@ func (store *MapFileStore) GetAll(forceFetch bool) (map[string]any, error) {
 	defer store.mu.RUnlock()
 
 	// Return a copy of the in-memory data.
-	dataCopy := make(map[string]any)
-	maps.Copy(dataCopy, store.data)
-	return dataCopy, nil
+	copyAfter, _ := maputil.DeepCopyValue(store.data).(map[string]any)
+	return copyAfter, nil
 }
 
 // SetAll overwrites all data in the store with the provided data.
@@ -335,37 +337,48 @@ func (store *MapFileStore) DeleteKey(keys []string) error {
 // DeleteFile removes the backing file atomically, emits an OpDeleteFile event and clears lastStat.
 // Returns ErrFileConflict if the file changed since we last observed it.
 func (store *MapFileStore) DeleteFile() error {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-
-	if store.lastStat != nil {
-		if cur, err := os.Stat(store.filename); err == nil {
-			if !isSameFileInfo(cur, store.lastStat) {
-				return ErrFileConflict
-			}
-		} else if !os.IsNotExist(err) {
-			return err
-		}
-	}
-
-	if err := os.Remove(store.filename); err != nil && !os.IsNotExist(err) {
+	event, err := store.deleteFile()
+	if err != nil {
 		return err
 	}
+	if event != nil {
+		store.fireEvent(*event)
+	}
 
-	store.lastStat = nil
-	store.data = make(map[string]any)
-
-	store.fireEvent(FileEvent{
-		Op:        OpDeleteFile,
-		File:      store.filename,
-		Timestamp: time.Now(),
-	})
 	return nil
 }
 
 func (store *MapFileStore) Close() error {
 	// Should not flush here as file may be deleted.
 	return nil
+}
+
+func (store *MapFileStore) deleteFile() (*FileEvent, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	if store.lastStat != nil {
+		if cur, err := os.Stat(store.filename); err == nil {
+			if !isSameFileInfo(cur, store.lastStat) {
+				return nil, ErrFileConflict
+			}
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	if err := os.Remove(store.filename); err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	store.lastStat = nil
+	store.data = make(map[string]any)
+	event := &FileEvent{
+		Op:        OpDeleteFile,
+		File:      store.filename,
+		Timestamp: time.Now(),
+	}
+	return event, nil
 }
 
 func (store *MapFileStore) setAll(data map[string]any) (copyAfter map[string]any, err error) {

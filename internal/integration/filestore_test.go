@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -328,6 +329,9 @@ func TestMapFileStore(t *testing.T) {
 		}
 
 		if tt.name == "File exists but cannot open" {
+			if runtime.GOOS == goosWindows {
+				t.Skip("chmod(000) does not reliably prevent opening files on Windows")
+			}
 			// Create a file with no read permissions.
 			err := os.Chmod(tt.filename, 0o000)
 			if err != nil {
@@ -796,6 +800,9 @@ func TestMapFileStore_NoAutoFlush(t *testing.T) {
 }
 
 func TestMapFileStorePermissionErrorCases(t *testing.T) {
+	if runtime.GOOS == goosWindows {
+		t.Skip("chmod does not reliably prevent opening files on Windows")
+	}
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore_errors.json")
 	defaultData := map[string]any{"k": "v"}

@@ -15,6 +15,8 @@ import (
 	"github.com/ppipada/mapstore-go/jsonencdec"
 )
 
+const goosWindows = "windows"
+
 func TestMapDirectoryStore_CRUD(t *testing.T) {
 	t.Parallel()
 
@@ -1098,7 +1100,7 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 		t.Parallel()
 
 		// Windows ACLs don't behave like POSIX chmod; skip to keep the test portable.
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == goosWindows {
 			t.Skip("skipping chmod-based permission test on windows")
 		}
 
