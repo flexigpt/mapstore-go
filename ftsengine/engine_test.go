@@ -14,36 +14,43 @@ import (
 
 func TestValidateConfigAndConstructor(t *testing.T) {
 	t.Run("happy in-memory engine", func(t *testing.T) {
-		_ = newMemoryEngine(t) // Should not panic.
+		e := newMemoryEngine(t) // Should not panic.
+		e.Close()
 	})
 	t.Run("duplicate column names rejected", func(t *testing.T) {
-		_, err := NewEngine(Config{
+		e, err := NewEngine(Config{
 			BaseDir: MemoryDBBaseDir,
 			Table:   "t",
 			Columns: []Column{{Name: "dup"}, {Name: "dup"}},
 		})
 		if err == nil || !strings.Contains(err.Error(), "duplicate column") {
 			t.Fatalf("expected duplicate column error, got %v", err)
+		} else if e != nil {
+			e.Close()
 		}
 	})
 	t.Run("empty column name rejected", func(t *testing.T) {
-		_, err := NewEngine(Config{
+		e, err := NewEngine(Config{
 			BaseDir: MemoryDBBaseDir,
 			Table:   "t",
 			Columns: []Column{{Name: ""}},
 		})
 		if err == nil || !strings.Contains(err.Error(), "empty name") {
 			t.Fatalf("expected empty column error, got %v", err)
+		} else if e != nil {
+			e.Close()
 		}
 	})
 	t.Run("missing table name rejected", func(t *testing.T) {
-		_, err := NewEngine(Config{
+		e, err := NewEngine(Config{
 			BaseDir: MemoryDBBaseDir,
 			Table:   "   ",
 			Columns: []Column{{Name: "x"}},
 		})
 		if err == nil {
 			t.Fatalf("want error for empty table name")
+		} else if e != nil {
+			e.Close()
 		}
 	})
 }
@@ -808,7 +815,7 @@ func TestUnindexedColumnIsNotSearchable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init: %v", err)
 	}
-
+	defer e.Close()
 	_ = e.Upsert(t.Context(), "d1", map[string]string{
 		"title":  "public",
 		"secret": "top-secret",
@@ -935,6 +942,8 @@ func TestBatchListAllUnindexed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init: %v", err)
 	}
+	defer e.Close()
+
 	_ = e.Upsert(t.Context(), "d1", map[string]string{"title": "foo", "body": "bar"})
 	rows, _, _ := e.BatchList(t.Context(), "", []string{"title", "body"}, "", 5)
 	if len(rows) != 1 || rows[0].Values["title"] != "foo" {
@@ -955,6 +964,7 @@ func TestAllColumnsUnindexed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("init: %v", err)
 	}
+	defer e.Close()
 	_ = e.Upsert(t.Context(), "d1", map[string]string{"title": "foo", "body": "bar"})
 	hits, _, _ := e.Search(t.Context(), "foo", "", 5)
 	if len(hits) != 0 {
