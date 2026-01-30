@@ -1271,6 +1271,7 @@ func newBatchTestEngine(t *testing.T) *Engine {
 	if err != nil {
 		t.Fatalf("engine init: %v", err)
 	}
+	t.Cleanup(func() { _ = e.Close() }) // <- important on Windows
 	return e
 }
 
@@ -1290,6 +1291,7 @@ func newTestEngine(t *testing.T) *Engine {
 	if err != nil {
 		t.Fatalf("engine init: %v", err)
 	}
+	t.Cleanup(func() { _ = e.Close() }) // <- important on Windows
 	return e
 }
 
@@ -1306,5 +1308,6 @@ func newMemoryEngine(t *testing.T) *Engine {
 	if err != nil {
 		t.Fatalf("mem engine init: %v", err)
 	}
+	t.Cleanup(func() { _ = e.Close() }) // <- important on Windows
 	return e
 }
