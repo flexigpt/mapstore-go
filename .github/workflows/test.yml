@@ -18,27 +18,48 @@ permissions:
 
 jobs:
   go:
-    name: Go - test
-    runs-on: ubuntu-24.04
+    name: Go - test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            coverage: true
+          - os: windows-2022
+            coverage: false
+          - os: macos-15
+            coverage: false
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set-up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
 
       - name: Unlock keyring
+        if: runner.os == 'Linux'
         uses: t1m0thyj/unlock-keyring@v1
 
       - name: test
         run: |
-          go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out
+          if [[ "${{ matrix.coverage }}" == "true" ]]; then
+            go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+            go tool cover -func=coverage.out
+          else
+            go test ./...
+          fi
 
       - name: check test coverage
+        if: matrix.coverage == true
         uses: vladopajic/go-test-coverage@v2
         with:
           config: ./.testcoverage.yml
