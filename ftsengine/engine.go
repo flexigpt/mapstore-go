@@ -432,8 +432,8 @@ func (e *Engine) Search(
 	var offset int
 	if pageToken != "" {
 		var t struct {
-			Query  string `json:"q"`
-			Offset int    `json:"o"`
+			Query  string `json:"q"` //nolint:tagliatelle // PageToken specific.
+			Offset int    `json:"o"` //nolint:tagliatelle // PageToken specific.
 		}
 		b, err := base64.StdEncoding.DecodeString(pageToken)
 		if err == nil {
@@ -492,8 +492,8 @@ func (e *Engine) Search(
 	if len(hits) == pageSize {
 		offset += pageSize
 		buf, _ := json.Marshal(struct {
-			Query  string `json:"q"`
-			Offset int    `json:"o"`
+			Query  string `json:"q"` //nolint:tagliatelle // PageToken specific.
+			Offset int    `json:"o"` //nolint:tagliatelle // PageToken specific.
 		}{query, offset})
 		nextToken = base64.StdEncoding.EncodeToString(buf)
 	}
