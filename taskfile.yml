@@ -28,6 +28,11 @@ tasks:
              --exclude_ext=yaml,sum,mod,md5 --not-match-f='LICENSE$|\.gitignore$' \
              .
 
+  checkupgrade:
+    cmds:
+      - gomajor list
+      - go-mod-upgrade -l
+
   godepgraph:
     cmds:
       - godepgraph -s -o github.com/ppipada/mapstore-go,command-line-arguments store_directory.go | dot -Tpng -o godepgraph.png

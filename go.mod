@@ -1,12 +1,12 @@
 module github.com/ppipada/mapstore-go
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/glebarez/go-sqlite v1.22.0
 	github.com/google/uuid v1.6.0
 	github.com/zalando/go-keyring v0.2.6
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.42.0
 )
 
 require (
