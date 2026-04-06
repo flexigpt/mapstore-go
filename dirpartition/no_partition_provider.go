@@ -1,6 +1,6 @@
 package dirpartition
 
-import "github.com/ppipada/mapstore-go"
+import "github.com/flexigpt/mapstore-go"
 
 // NoPartitionProvider is a default implementation that treats the base directory as a single partition.
 type NoPartitionProvider struct{}

@@ -35,7 +35,7 @@ tasks:
 
   godepgraph:
     cmds:
-      - godepgraph -s -o github.com/ppipada/mapstore-go,command-line-arguments store_directory.go | dot -Tpng -o godepgraph.png
+      - godepgraph -s -o github.com/flexigpt/mapstore-go,command-line-arguments store_directory.go | dot -Tpng -o godepgraph.png
 
   tagstats:
     cmds:

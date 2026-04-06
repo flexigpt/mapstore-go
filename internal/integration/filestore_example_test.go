@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ppipada/mapstore-go"
-	"github.com/ppipada/mapstore-go/jsonencdec"
+	"github.com/flexigpt/mapstore-go"
+	"github.com/flexigpt/mapstore-go/jsonencdec"
 )
 
 // ExampleMapFileStore mirrors the README quick-start snippet for a

@@ -1,4 +1,4 @@
-module github.com/ppipada/mapstore-go
+module github.com/flexigpt/mapstore-go
 
 go 1.25.0
 

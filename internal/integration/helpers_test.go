@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ppipada/mapstore-go"
+	"github.com/flexigpt/mapstore-go"
 )
 
 // Below is your simple "reverse string" EncoderDecoder for demonstration.

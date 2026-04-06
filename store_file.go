@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ppipada/mapstore-go/internal/fileutil"
-	"github.com/ppipada/mapstore-go/internal/maputil"
+	"github.com/flexigpt/mapstore-go/internal/fileutil"
+	"github.com/flexigpt/mapstore-go/internal/maputil"
 )
 
 const maxSetAllRetries = 3

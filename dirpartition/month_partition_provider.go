@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ppipada/mapstore-go"
+	"github.com/flexigpt/mapstore-go"
 )
 
 // TimeExtractor is a function that returns the creation time of a file.

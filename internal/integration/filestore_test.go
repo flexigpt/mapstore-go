@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ppipada/mapstore-go"
-	"github.com/ppipada/mapstore-go/internal/encdecutil"
-	"github.com/ppipada/mapstore-go/internal/maputil"
-	"github.com/ppipada/mapstore-go/jsonencdec"
-	"github.com/ppipada/mapstore-go/keyringencdec"
+	"github.com/flexigpt/mapstore-go"
+	"github.com/flexigpt/mapstore-go/internal/encdecutil"
+	"github.com/flexigpt/mapstore-go/internal/maputil"
+	"github.com/flexigpt/mapstore-go/jsonencdec"
+	"github.com/flexigpt/mapstore-go/keyringencdec"
 )
 
 func TestMapFileStoreExtended(t *testing.T) {

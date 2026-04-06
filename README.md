@@ -1,9 +1,9 @@
 # MapStore for Go
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ppipada/mapstore-go)](https://goreportcard.com/report/github.com/ppipada/mapstore-go)
-[![lint](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/lint.yml)
-[![test](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/ppipada/mapstore-go/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/flexigpt/mapstore-go)](https://goreportcard.com/report/github.com/flexigpt/mapstore-go)
+[![lint](https://github.com/flexigpt/mapstore-go/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/flexigpt/mapstore-go/actions/workflows/lint.yml)
+[![test](https://github.com/flexigpt/mapstore-go/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/flexigpt/mapstore-go/actions/workflows/test.yml)
 
 MapStore is a local, filesystem‑backed map database with pluggable codecs (JSON or custom), optional per‑key encryption via the OS keyring, and optional full‑text search via SQLite FTS5.
 
@@ -58,7 +58,7 @@ MapStore is a local, filesystem‑backed map database with pluggable codecs (JSO
 ## Installation
 
 ```bash
-go get github.com/ppipada/mapstore-go
+go get github.com/flexigpt/mapstore-go
 ```
 
 ## Quick Start
@@ -70,12 +70,12 @@ go get github.com/ppipada/mapstore-go
 
 ## Packages
 
-- `github.com/ppipada/mapstore-go` — file and directory stores, options, events, and types.
-- `github.com/ppipada/mapstore-go/jsonencdec` — JSON file encoder/decoder.
-- `github.com/ppipada/mapstore-go/keyringencdec` — per-value encryption (AES‑256‑GCM; key in OS keyring).
-- `github.com/ppipada/mapstore-go/dirpartition` — partitioning strategies (month/no-op).
-- `github.com/ppipada/mapstore-go/uuidv7filename` — UUIDv7‑backed filename helpers.
-- `github.com/ppipada/mapstore-go/ftsengine` — FTS5 engine and sync helpers.
+- `github.com/flexigpt/mapstore-go` — file and directory stores, options, events, and types.
+- `github.com/flexigpt/mapstore-go/jsonencdec` — JSON file encoder/decoder.
+- `github.com/flexigpt/mapstore-go/keyringencdec` — per-value encryption (AES‑256‑GCM; key in OS keyring).
+- `github.com/flexigpt/mapstore-go/dirpartition` — partitioning strategies (month/no-op).
+- `github.com/flexigpt/mapstore-go/uuidv7filename` — UUIDv7‑backed filename helpers.
+- `github.com/flexigpt/mapstore-go/ftsengine` — FTS5 engine and sync helpers.
 
 ## Concurrency Model
 

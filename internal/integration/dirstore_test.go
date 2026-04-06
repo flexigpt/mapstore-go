@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ppipada/mapstore-go"
-	"github.com/ppipada/mapstore-go/dirpartition"
-	"github.com/ppipada/mapstore-go/jsonencdec"
+	"github.com/flexigpt/mapstore-go"
+	"github.com/flexigpt/mapstore-go/dirpartition"
+	"github.com/flexigpt/mapstore-go/jsonencdec"
 )
 
 const goosWindows = "windows"
