@@ -142,6 +142,7 @@ func (e *Engine) BatchDelete(ctx context.Context, ids []string) error {
 			b.WriteByte('?')
 		}
 		const sqlDelete = `DELETE FROM %s WHERE %s IN (%s);`
+		//nolint:gosec // Dynamic SQL is required for identifiers and placeholder count; identifiers are quoted/validated, values use parameters.
 		sqlQ := fmt.Sprintf(sqlDelete, quote(e.cfg.Table), ColNameExternalID, b.String())
 
 		if _, err := e.db.ExecContext(ctx, sqlQ, toAny(part)...); err != nil {
@@ -306,6 +307,7 @@ func (e *Engine) BatchList(
 	args = append(args, limitRows)
 
 	const sqlSelect = `SELECT %s FROM %s WHERE %s ORDER BY %s,%s LIMIT ?;`
+	//nolint:gosec // Dynamic SQL is required for identifiers and placeholder count; identifiers are quoted/validated, values use parameters.
 	sqlQ := fmt.Sprintf(sqlSelect,
 		strings.Join(selectCols, ","),
 		quote(e.cfg.Table),
@@ -460,6 +462,7 @@ func (e *Engine) Search(
 			ORDER BY s ASC, %s
 			LIMIT ? OFFSET ?;`
 
+	//nolint:gosec // Dynamic SQL is required for identifiers and placeholder count; identifiers are quoted/validated, values use parameters.
 	sqlQ := fmt.Sprintf(sqlSearch, ColNameExternalID,
 		quote(e.cfg.Table), paramPlaceholders(len(weights)),
 		quote(e.cfg.Table), e.cfg.Table, ColNameRowID)

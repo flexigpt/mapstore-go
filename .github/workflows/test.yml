@@ -6,9 +6,6 @@ on:
       - main
   pull_request:
 
-#
-# Cancel outdated runs for the same branch / PR
-#
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -18,19 +15,19 @@ permissions:
 
 jobs:
   go:
-    name: Go - test (${{ matrix.os }})
+    name: Go - test (${{ matrix.os }}, ${{ matrix.go-source }})
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
+        os: [ ubuntu-24.04, windows-2022, macos-15 ]
+        go-source: [ minimum, dev ]
         include:
-          - os: ubuntu-24.04
-            coverage: true
-          - os: windows-2022
-            coverage: false
-          - os: macos-15
-            coverage: false
+          - go-source: minimum
+            go-version-file: go.mod
+          - go-source: dev
+            go-version-file: .tool-versions
 
     defaults:
       run:
@@ -43,23 +40,25 @@ jobs:
       - name: Set-up Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: "go.mod"
+          go-version-file: ${{ matrix.go-version-file }}
+          cache: true
 
       - name: Unlock keyring
         if: runner.os == 'Linux'
         uses: t1m0thyj/unlock-keyring@v1
 
-      - name: test
+      - name: Test with coverage
+        if: matrix.os == 'ubuntu-24.04' && matrix.go-source == 'dev'
         run: |
-          if [[ "${{ matrix.coverage }}" == "true" ]]; then
-            go test -count=1 -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
-            go tool cover -func=coverage.out
-          else
-            go test ./...
-          fi
+          go test -count=1 -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
 
-      - name: check test coverage
-        if: matrix.coverage == true
+      - name: Check test coverage
+        if: matrix.os == 'ubuntu-24.04' && matrix.go-source == 'dev'
         uses: vladopajic/go-test-coverage@v2
         with:
           config: ./.testcoverage.yml
+
+      - name: Test
+        if: matrix.os != 'ubuntu-24.04' || matrix.go-source != 'dev'
+        run: go test ./...
