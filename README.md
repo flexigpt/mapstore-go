@@ -28,7 +28,7 @@ MapStore is a local, filesystem‑backed map database with pluggable codecs (JSO
 
 - Directory store: A convenience manager that partitions data across subdirectories and paginates listings.
 
-- Pure Go (no cgo), cross-platform (Linux/macOS/Windows), Go 1.25+.
+- Pure Go (no cgo), cross-platform (Linux/macOS/Windows), Go 1.26+.
 
 ## Capabilities and Extensibility
 

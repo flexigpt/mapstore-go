@@ -1,6 +1,6 @@
 module github.com/flexigpt/mapstore-go
 
-go 1.25.0
+go 1.26
 
 require (
 	github.com/glebarez/go-sqlite v1.22.0
