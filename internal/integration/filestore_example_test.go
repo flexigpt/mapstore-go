@@ -11,6 +11,8 @@ import (
 	"github.com/flexigpt/mapstore-go/jsonencdec"
 )
 
+const exampleUnsavedKey = "unsaved"
+
 // ExampleMapFileStore mirrors the README quick-start snippet for a
 // single JSON-backed file store. It creates a temporary config file,
 // sets a nested key, then prints the resulting map entry.
@@ -50,7 +52,7 @@ func ExampleMapFileStore() {
 }
 
 // Basic event flow
-// Sets a couple of keys, deletes them, then resets the file.  We attach a single
+// Sets a couple of keys, deletes them, then resets the file. We attach a single
 // listener that records every event and print a short, deterministic summary.
 func Example_events_basicFlow() {
 	tmp, _ := os.MkdirTemp("", "fs_example1")
@@ -126,19 +128,19 @@ func Example_events_autoFlush() {
 		mapstore.WithFileListeners(listener),
 	)
 
-	_ = st.SetKey([]string{"unsaved"}, 123)
+	_ = st.SetKey([]string{exampleUnsavedKey}, 123)
 	fmt.Println("event op:", last.Op)
 
 	// Re-open the file - the key is not there yet.
 	reopen1, _ := mapstore.NewMapFileStore(file, nil, jsonencdec.JSONEncoderDecoder{})
-	if _, err := reopen1.GetKey([]string{"unsaved"}); err != nil {
+	if _, err := reopen1.GetKey([]string{exampleUnsavedKey}); err != nil {
 		fmt.Println("not on disk yet")
 	}
 
 	// Flush and try again.
 	_ = st.Flush()
 	reopen2, _ := mapstore.NewMapFileStore(file, nil, jsonencdec.JSONEncoderDecoder{})
-	v, _ := reopen2.GetKey([]string{"unsaved"})
+	v, _ := reopen2.GetKey([]string{exampleUnsavedKey})
 	fmt.Println("on disk after flush:", v)
 
 	// Output:

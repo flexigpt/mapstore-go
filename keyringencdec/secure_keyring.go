@@ -89,7 +89,7 @@ func (e *EncryptedStringValueEncoderDecoder) Decode(r io.Reader, value any) erro
 	valuePtr := reflect.ValueOf(value)
 
 	// Check if value is a pointer.
-	if valuePtr.Kind() != reflect.Ptr {
+	if valuePtr.Kind() != reflect.Pointer {
 		return fmt.Errorf("value must be a pointer. Kind: %v", valuePtr.Kind())
 	}
 

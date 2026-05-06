@@ -12,6 +12,23 @@ import (
 	"time"
 )
 
+const (
+	testDupColumnName = "dup"
+	testTag           = "tag"
+	testHelloWorld    = "hello world"
+	colBody           = "body"
+	testSecond        = "second"
+	testDBFileName    = "fts.sqlite"
+	testDocsTable     = "docs"
+	testHello         = "hello"
+	testBar           = "bar"
+	testDoc1          = "doc1"
+	testDoc2          = "doc2"
+	testDoc4          = "doc4"
+	testSecret        = "secret"
+	testNotFound      = "notfound"
+)
+
 func TestValidateConfigAndConstructor(t *testing.T) {
 	t.Run("happy in-memory engine", func(t *testing.T) {
 		e := newMemoryEngine(t) // Should not panic.
@@ -21,7 +38,7 @@ func TestValidateConfigAndConstructor(t *testing.T) {
 		e, err := NewEngine(Config{
 			BaseDir: MemoryDBBaseDir,
 			Table:   "t",
-			Columns: []Column{{Name: "dup"}, {Name: "dup"}},
+			Columns: []Column{{Name: testDupColumnName}, {Name: testDupColumnName}},
 		})
 		if err == nil || !strings.Contains(err.Error(), "duplicate column") {
 			t.Fatalf("expected duplicate column error, got %v", err)
@@ -66,14 +83,14 @@ func TestIsEmptyAndCRUD(t *testing.T) {
 
 	// Insert two documents.
 	if err := e.Upsert(t.Context(), "doc/alpha", map[string]string{
-		"title": "hello world",
-		"body":  "ignored",
+		testColumnTitle: testHelloWorld,
+		colBody:         "ignored",
 	}); err != nil {
 		t.Fatalf("upsert alpha: %v", err)
 	}
 	if err := e.Upsert(t.Context(), "doc/bravo", map[string]string{
-		"title": "second",
-		"body":  "hello world again",
+		testColumnTitle: testSecond,
+		colBody:         "hello world again",
 	}); err != nil {
 		t.Fatalf("upsert bravo: %v", err)
 	}
@@ -83,7 +100,7 @@ func TestIsEmptyAndCRUD(t *testing.T) {
 	}
 
 	// Search must hit two documents.
-	hits, next, err := e.Search(t.Context(), "hello", "", 10)
+	hits, next, err := e.Search(t.Context(), testHello, "", 10)
 	if err != nil || len(hits) != 2 || next != "" {
 		t.Fatalf("search expected 2 hits, got %d (next=%q, err=%v)",
 			len(hits), next, err)
@@ -91,15 +108,15 @@ func TestIsEmptyAndCRUD(t *testing.T) {
 
 	// Update one, delete the other.
 	if err := e.Upsert(t.Context(), "doc/alpha", map[string]string{
-		"title": "updated",
-		"body":  "",
+		testColumnTitle: "updated",
+		colBody:         "",
 	}); err != nil {
 		t.Fatalf("update alpha: %v", err)
 	}
 	_ = e.Delete(t.Context(), "doc/bravo")
 
 	// No document should match the old term.
-	hits, _, _ = e.Search(t.Context(), "hello", "", 10)
+	hits, _, _ = e.Search(t.Context(), testHello, "", 10)
 	if len(hits) != 0 {
 		t.Fatalf("expected 0 hits, got %d", len(hits))
 	}
@@ -109,12 +126,12 @@ func TestWeightRanking(t *testing.T) {
 	e := newTestEngine(t)
 
 	_ = e.Upsert(t.Context(), "1", map[string]string{
-		"title": "alpha winner",
-		"body":  "",
+		testColumnTitle: "alpha winner",
+		colBody:         "",
 	})
 	_ = e.Upsert(t.Context(), "2", map[string]string{
-		"title": "",
-		"body":  "alpha only in body",
+		testColumnTitle: "",
+		colBody:         "alpha only in body",
 	})
 
 	hits, _, err := e.Search(t.Context(), "alpha", "", 10)
@@ -136,11 +153,11 @@ func TestWeightRanking(t *testing.T) {
 func TestSearchPaginationAndTokenHandling(t *testing.T) {
 	e := newTestEngine(t)
 
-	// Insert 15 documents containing the term "foo".
+	// Insert 15 documents containing the term testValueFoo.
 	for i := range 15 {
 		_ = e.Upsert(t.Context(), "id"+strconv.Itoa(i), map[string]string{
-			"title": "",
-			"body":  "foo bar",
+			testColumnTitle: "",
+			colBody:         "foo bar",
 		})
 	}
 
@@ -149,7 +166,7 @@ func TestSearchPaginationAndTokenHandling(t *testing.T) {
 	total := 0
 
 	for page := 0; ; page++ {
-		hits, next, err := e.Search(t.Context(), "foo", token, 6)
+		hits, next, err := e.Search(t.Context(), testValueFoo, token, 6)
 		if err != nil {
 			t.Fatalf("page %d: %v", page, err)
 		}
@@ -177,7 +194,7 @@ func TestSearchPaginationAndTokenHandling(t *testing.T) {
 	}
 
 	t.Run("invalid base64 token is ignored", func(t *testing.T) {
-		hits, _, err := e.Search(t.Context(), "foo", "!!bad", 10)
+		hits, _, err := e.Search(t.Context(), testValueFoo, "!!bad", 10)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -188,7 +205,7 @@ func TestSearchPaginationAndTokenHandling(t *testing.T) {
 
 	t.Run("malformed json token is ignored", func(t *testing.T) {
 		bad := base64.StdEncoding.EncodeToString([]byte("{notjson"))
-		hits, _, err := e.Search(t.Context(), "foo", bad, 10)
+		hits, _, err := e.Search(t.Context(), testValueFoo, bad, 10)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -199,8 +216,8 @@ func TestSearchPaginationAndTokenHandling(t *testing.T) {
 
 	t.Run("pageSize ≤0 or >10k uses default", func(t *testing.T) {
 		for _, sz := range []int{-5, 0, 20000} {
-			hitsA, _, _ := e.Search(t.Context(), "foo", "", sz)
-			hitsB, _, _ := e.Search(t.Context(), "foo", "", 10)
+			hitsA, _, _ := e.Search(t.Context(), testValueFoo, "", sz)
+			hitsB, _, _ := e.Search(t.Context(), testValueFoo, "", 10)
 			if len(hitsA) != len(hitsB) {
 				t.Fatalf("pageSize %d should fall back to default", sz)
 			}
@@ -213,7 +230,7 @@ func TestEdgeCases(t *testing.T) {
 	e := newTestEngine(t)
 
 	t.Run("empty docID rejected", func(t *testing.T) {
-		if err := e.Upsert(t.Context(), "", map[string]string{"title": "x"}); err == nil {
+		if err := e.Upsert(t.Context(), "", map[string]string{testColumnTitle: "x"}); err == nil {
 			t.Error("expected validation error for empty id")
 		}
 	})
@@ -225,20 +242,20 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("row replacement keeps only one copy", func(t *testing.T) {
-		if err := e.Upsert(t.Context(), "dup", map[string]string{"body": "first"}); err != nil {
+		if err := e.Upsert(t.Context(), testDupColumnName, map[string]string{colBody: "first"}); err != nil {
 			t.Fatal(err)
 		}
-		if err := e.Upsert(t.Context(), "dup", map[string]string{"body": "second"}); err != nil {
+		if err := e.Upsert(t.Context(), testDupColumnName, map[string]string{colBody: testSecond}); err != nil {
 			t.Fatal(err)
 		}
-		h, _, _ := e.Search(t.Context(), "second", "", 10)
-		if len(h) != 1 || h[0].ID != "dup" {
+		h, _, _ := e.Search(t.Context(), testSecond, "", 10)
+		if len(h) != 1 || h[0].ID != testDupColumnName {
 			t.Fatalf("replace failed, hits=%v", h)
 		}
 	})
 
 	t.Run("IsEmpty resets after all deletes", func(t *testing.T) {
-		_ = e.Delete(t.Context(), "dup")
+		_ = e.Delete(t.Context(), testDupColumnName)
 		isEmp, _ := e.IsEmpty(t.Context())
 		if !isEmp {
 			t.Error("IsEmpty should be true after deleting last row")
@@ -246,8 +263,8 @@ func TestEdgeCases(t *testing.T) {
 	})
 
 	t.Run("token ignored on different query", func(t *testing.T) {
-		_ = e.Upsert(t.Context(), "a1", map[string]string{"title": "apple"})
-		_ = e.Upsert(t.Context(), "a2", map[string]string{"title": "apple"})
+		_ = e.Upsert(t.Context(), "a1", map[string]string{testColumnTitle: "apple"})
+		_ = e.Upsert(t.Context(), "a2", map[string]string{testColumnTitle: "apple"})
 
 		h1, tok, _ := e.Search(t.Context(), "apple", "", 1)
 		if len(h1) != 1 || tok == "" {
@@ -268,15 +285,15 @@ func TestSchemaChangeDropsPreviousData(t *testing.T) {
 	// First version with one column.
 	cfgV1 := Config{
 		BaseDir:    tmp,
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
-		Columns:    []Column{{Name: "body"}},
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
+		Columns:    []Column{{Name: colBody}},
 	}
 	e1, err := NewEngine(cfgV1)
 	if err != nil {
 		t.Fatalf("engine v1 init: %v", err)
 	}
-	if err := e1.Upsert(t.Context(), "x", map[string]string{"body": "hello"}); err != nil {
+	if err := e1.Upsert(t.Context(), "x", map[string]string{colBody: testHello}); err != nil {
 		t.Fatalf("insert v1: %v", err)
 	}
 	e1.Close()
@@ -284,7 +301,7 @@ func TestSchemaChangeDropsPreviousData(t *testing.T) {
 	// Second version adds a column, which must change the checksum,
 	// therefore the virtual table is recreated and previous rows vanish.
 	cfgV2 := cfgV1
-	cfgV2.Columns = append(cfgV2.Columns, Column{Name: "title"})
+	cfgV2.Columns = append(cfgV2.Columns, Column{Name: testColumnTitle})
 	e2, err := NewEngine(cfgV2)
 	if err != nil {
 		t.Fatalf("engine v2 init: %v", err)
@@ -309,59 +326,59 @@ func TestBatchUpsert_BasicAndEdgeCases(t *testing.T) {
 
 	t.Run("single doc insert", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"doc1": {"title": "foo", "body": "bar", "tag": "t1"},
+			testDoc1: {testColumnTitle: testValueFoo, colBody: testBar, testTag: "t1"},
 		}
 		if err := e.BatchUpsert(ctx, docs); err != nil {
 			t.Fatalf("single doc batch upsert: %v", err)
 		}
-		hits, _, _ := e.Search(ctx, "foo", "", 10)
-		if len(hits) != 1 || hits[0].ID != "doc1" {
+		hits, _, _ := e.Search(ctx, testValueFoo, "", 10)
+		if len(hits) != 1 || hits[0].ID != testDoc1 {
 			t.Fatalf("expected doc1, got %+v", hits)
 		}
 	})
 
 	t.Run("multiple docs insert", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"doc2": {"title": "hello", "body": "world", "tag": "t2"},
-			"doc3": {"title": "goodbye", "body": "moon", "tag": "t3"},
+			testDoc2: {testColumnTitle: testHello, colBody: "world", testTag: "t2"},
+			"doc3":   {testColumnTitle: "goodbye", colBody: "moon", testTag: "t3"},
 		}
 		if err := e.BatchUpsert(ctx, docs); err != nil {
 			t.Fatalf("multi doc batch upsert: %v", err)
 		}
-		hits, _, _ := e.Search(ctx, "hello", "", 10)
-		if len(hits) != 1 || hits[0].ID != "doc2" {
+		hits, _, _ := e.Search(ctx, testHello, "", 10)
+		if len(hits) != 1 || hits[0].ID != testDoc2 {
 			t.Fatalf("expected doc2, got %+v", hits)
 		}
 	})
 
 	t.Run("update existing doc", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"doc2": {"title": "updated", "body": "world", "tag": "t2"},
+			testDoc2: {testColumnTitle: "updated", colBody: "world", testTag: "t2"},
 		}
 		if err := e.BatchUpsert(ctx, docs); err != nil {
 			t.Fatalf("update doc2: %v", err)
 		}
 		hits, _, _ := e.Search(ctx, "updated", "", 10)
-		if len(hits) != 1 || hits[0].ID != "doc2" {
+		if len(hits) != 1 || hits[0].ID != testDoc2 {
 			t.Fatalf("expected updated doc2, got %+v", hits)
 		}
 	})
 
 	t.Run("missing column values are empty", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"doc4": {"title": "only title"},
+			testDoc4: {testColumnTitle: "only title"},
 		}
 		if err := e.BatchUpsert(ctx, docs); err != nil {
 			t.Fatalf("missing columns: %v", err)
 		}
 		// Should be searchable by title but not by body or tag.
 		hits, _, _ := e.Search(ctx, "only", "", 10)
-		if len(hits) != 1 || hits[0].ID != "doc4" {
+		if len(hits) != 1 || hits[0].ID != testDoc4 {
 			t.Fatalf("expected doc4, got %+v", hits)
 		}
 		hits, _, _ = e.Search(ctx, "t1", "", 10)
 		for _, h := range hits {
-			if h.ID == "doc4" {
+			if h.ID == testDoc4 {
 				t.Fatalf("doc4 should not match tag t1")
 			}
 		}
@@ -369,7 +386,7 @@ func TestBatchUpsert_BasicAndEdgeCases(t *testing.T) {
 
 	t.Run("unknown column names are ignored", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"doc5": {"title": "x", "unknown": "y"},
+			"doc5": {testColumnTitle: "x", "unknown": "y"},
 		}
 		if err := e.BatchUpsert(ctx, docs); err != nil {
 			t.Fatalf("should ignore unknown column, got %v", err)
@@ -388,7 +405,7 @@ func TestBatchUpsert_BasicAndEdgeCases(t *testing.T) {
 
 	t.Run("empty docID rejected", func(t *testing.T) {
 		docs := map[string]map[string]string{
-			"": {"title": "no id"},
+			"": {testColumnTitle: "no id"},
 		}
 		err := e.BatchUpsert(ctx, docs)
 		if err == nil || !strings.Contains(err.Error(), "empty id") {
@@ -405,9 +422,9 @@ func TestBatchUpsert_ScaleAndStress(t *testing.T) {
 	docs := make(map[string]map[string]string, N)
 	for i := range N {
 		docs[fmt.Sprintf("id%04d", i)] = map[string]string{
-			"title": fmt.Sprintf("title %d", i),
-			"body":  fmt.Sprintf("body %d", i),
-			"tag":   fmt.Sprintf("tag%d", i%10),
+			testColumnTitle: fmt.Sprintf("title %d", i),
+			colBody:         fmt.Sprintf("body %d", i),
+			testTag:         fmt.Sprintf("tag%d", i%10),
 		}
 	}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
@@ -439,9 +456,9 @@ func TestConcurrentUpserts(t *testing.T) {
 			for i := range perWorker {
 				docID := fmt.Sprintf("w%02d_%03d", w, i)
 				_ = e.Upsert(ctx, docID, map[string]string{
-					"title": "title " + docID,
-					"body":  "concurrent",
-					"tag":   "c",
+					testColumnTitle: "title " + docID,
+					colBody:         "concurrent",
+					testTag:         "c",
 				})
 			}
 		}(w)
@@ -467,9 +484,9 @@ func TestBatchList_BasicAndEdgeCases(t *testing.T) {
 	docs := map[string]map[string]string{}
 	for i := range 20 {
 		docs[fmt.Sprintf("d%02d", i)] = map[string]string{
-			"title": fmt.Sprintf("t%d", i),
-			"body":  fmt.Sprintf("b%d", i),
-			"tag":   fmt.Sprintf("tag%d", i%3),
+			testColumnTitle: fmt.Sprintf("t%d", i),
+			colBody:         fmt.Sprintf("b%d", i),
+			testTag:         fmt.Sprintf("tag%d", i%3),
 		}
 	}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
@@ -477,13 +494,12 @@ func TestBatchList_BasicAndEdgeCases(t *testing.T) {
 	}
 
 	type testCase struct {
-		name       string
-		compareCol string
-		wantedCols []string
-		pageSize   int
-		expectErr  bool
-		expectRows int
-		// How many tokens/pages to exhaust all rows.
+		name         string
+		compareCol   string
+		wantedCols   []string
+		pageSize     int
+		expectErr    bool
+		expectRows   int
 		expectTokens int
 	}
 	tests := []testCase{
@@ -495,14 +511,14 @@ func TestBatchList_BasicAndEdgeCases(t *testing.T) {
 		},
 		{
 			name:         "wantedCols subset",
-			wantedCols:   []string{"title"},
+			wantedCols:   []string{testColumnTitle},
 			pageSize:     5,
 			expectRows:   20,
 			expectTokens: 4,
 		},
 		{
 			name:         "compareColumn tag",
-			compareCol:   "tag",
+			compareCol:   testTag,
 			pageSize:     10,
 			expectRows:   20,
 			expectTokens: 2,
@@ -514,7 +530,7 @@ func TestBatchList_BasicAndEdgeCases(t *testing.T) {
 		},
 		{
 			name:       "unknown wantedCol",
-			wantedCols: []string{"title", "nope"},
+			wantedCols: []string{testColumnTitle, "nope"},
 			expectErr:  true,
 		},
 		{
@@ -588,9 +604,9 @@ func TestBatchList_PaginationAndTokenCorrectness(t *testing.T) {
 			t.Fatalf("cannot generate rand number: %v", err)
 		}
 		docs[fmt.Sprintf("doc%02d", i)] = map[string]string{
-			"title": fmt.Sprintf("title%d", i),
-			"body":  fmt.Sprintf("body%d", i),
-			"tag":   fmt.Sprintf("tag%d", n),
+			testColumnTitle: fmt.Sprintf("title%d", i),
+			colBody:         fmt.Sprintf("body%d", i),
+			testTag:         fmt.Sprintf("tag%d", n),
 		}
 	}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
@@ -601,7 +617,7 @@ func TestBatchList_PaginationAndTokenCorrectness(t *testing.T) {
 	seen := map[string]bool{}
 	token := ""
 	for {
-		rows, next, err := e.BatchList(ctx, "tag", []string{"title", "tag"}, token, 8)
+		rows, next, err := e.BatchList(ctx, testTag, []string{testColumnTitle, testTag}, token, 8)
 		if err != nil {
 			t.Fatalf("batchlist: %v", err)
 		}
@@ -632,9 +648,9 @@ func TestBatchList_TokenTamperingAndBoundary(t *testing.T) {
 	docs := map[string]map[string]string{}
 	for i := range 5 {
 		docs[fmt.Sprintf("x%d", i)] = map[string]string{
-			"title": fmt.Sprintf("t%d", i),
-			"body":  fmt.Sprintf("b%d", i),
-			"tag":   "tag",
+			testColumnTitle: fmt.Sprintf("t%d", i),
+			colBody:         fmt.Sprintf("b%d", i),
+			testTag:         testTag,
 		}
 	}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
@@ -657,8 +673,8 @@ func TestBatchList_TokenTamperingAndBoundary(t *testing.T) {
 	})
 
 	t.Run("token for different compareColumn", func(t *testing.T) {
-		// Get a token for compareColumn "tag".
-		_, token, err := e.BatchList(ctx, "tag", nil, "", 2)
+		// Get a token for compareColumn testTag.
+		_, token, err := e.BatchList(ctx, testTag, nil, "", 2)
 		if err != nil {
 			t.Fatalf("batchlist: %v", err)
 		}
@@ -679,20 +695,20 @@ func TestBatchList_OrderingAndStability(t *testing.T) {
 
 	// Insert docs with duplicate compareColumn values.
 	docs := map[string]map[string]string{
-		"a": {"title": "foo", "body": "bar", "tag": "dup"},
-		"b": {"title": "baz", "body": "qux", "tag": "dup"},
-		"c": {"title": "quux", "body": "corge", "tag": "dup"},
-		"d": {"title": "grault", "body": "garply", "tag": "unique"},
+		"a": {testColumnTitle: testValueFoo, colBody: testBar, testTag: testDupColumnName},
+		"b": {testColumnTitle: "baz", colBody: "qux", testTag: testDupColumnName},
+		"c": {testColumnTitle: "quux", colBody: "corge", testTag: testDupColumnName},
+		"d": {testColumnTitle: "grault", colBody: "garply", testTag: "unique"},
 	}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
 		t.Fatalf("setup batch: %v", err)
 	}
 
-	// Page with compareColumn "tag", pageSize 2.
+	// Page with compareColumn testTag, pageSize 2.
 	token := ""
 	var ids []string
 	for {
-		rows, next, err := e.BatchList(ctx, "tag", []string{"title"}, token, 2)
+		rows, next, err := e.BatchList(ctx, testTag, []string{testColumnTitle}, token, 2)
 		if err != nil {
 			t.Fatalf("batchlist: %v", err)
 		}
@@ -709,7 +725,7 @@ func TestBatchList_OrderingAndStability(t *testing.T) {
 	}
 	// Must be ordered by tag then rowid - therefore all "dup" first.
 	for i, id := range ids {
-		if docs[id]["tag"] == "unique" && i < 3 {
+		if docs[id][testTag] == "unique" && i < 3 {
 			t.Fatalf("unique tag appeared before all dup ones")
 		}
 	}
@@ -735,8 +751,8 @@ func TestMemoryDBBasicCRUD(t *testing.T) {
 	e := newMemoryEngine(t)
 	ctx := t.Context()
 
-	_ = e.Upsert(ctx, "m1", map[string]string{"c": "hello"})
-	hits, _, _ := e.Search(ctx, "hello", "", 5)
+	_ = e.Upsert(ctx, "m1", map[string]string{"c": testHello})
+	hits, _, _ := e.Search(ctx, testHello, "", 5)
 	if len(hits) != 1 || hits[0].ID != "m1" {
 		t.Fatalf("memory db failed search, hits=%+v", hits)
 	}
@@ -761,8 +777,8 @@ func TestRaceDetectorSmoke(t *testing.T) {
 			id := fmt.Sprintf("r%d", i)
 			for j := range 50 {
 				_ = e.Upsert(ctx, id, map[string]string{
-					"title": fmt.Sprintf("t%d", j),
-					"body":  fmt.Sprintf("b%d", j),
+					testColumnTitle: fmt.Sprintf("t%d", j),
+					colBody:         fmt.Sprintf("b%d", j),
 				})
 				if j%10 == 0 {
 					_ = e.Delete(ctx, id)
@@ -781,13 +797,13 @@ func TestSchemaPersistenceUnchanged(t *testing.T) {
 	tmp := t.TempDir()
 	cfg := Config{
 		BaseDir:    tmp,
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
-		Columns:    []Column{{Name: "body"}},
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
+		Columns:    []Column{{Name: colBody}},
 	}
 
 	e1, _ := NewEngine(cfg)
-	if err := e1.Upsert(t.Context(), "doc1", map[string]string{"body": "hello"}); err != nil {
+	if err := e1.Upsert(t.Context(), testDoc1, map[string]string{colBody: testHello}); err != nil {
 		t.Fatalf("insert v1: %v", err)
 	}
 	e1.Close()
@@ -796,8 +812,8 @@ func TestSchemaPersistenceUnchanged(t *testing.T) {
 	e2, _ := NewEngine(cfg)
 	defer e2.Close()
 
-	hits, _, _ := e2.Search(t.Context(), "hello", "", 10)
-	if len(hits) != 1 || hits[0].ID != "doc1" {
+	hits, _, _ := e2.Search(t.Context(), testHello, "", 10)
+	if len(hits) != 1 || hits[0].ID != testDoc1 {
 		t.Fatalf("row vanished after reopen, hits=%+v", hits)
 	}
 }
@@ -805,11 +821,11 @@ func TestSchemaPersistenceUnchanged(t *testing.T) {
 func TestUnindexedColumnIsNotSearchable(t *testing.T) {
 	e, err := NewEngine(Config{
 		BaseDir:    t.TempDir(),
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
 		Columns: []Column{
-			{Name: "title"},
-			{Name: "secret", Unindexed: true},
+			{Name: testColumnTitle},
+			{Name: testSecret, Unindexed: true},
 		},
 	})
 	if err != nil {
@@ -817,8 +833,8 @@ func TestUnindexedColumnIsNotSearchable(t *testing.T) {
 	}
 	defer e.Close()
 	_ = e.Upsert(t.Context(), "d1", map[string]string{
-		"title":  "public",
-		"secret": "top-secret",
+		testColumnTitle: "public",
+		testSecret:      "top-secret",
 	})
 
 	// "secret" must NOT be searchable.
@@ -827,8 +843,8 @@ func TestUnindexedColumnIsNotSearchable(t *testing.T) {
 	}
 
 	// But we can still list the value.
-	rows, _, _ := e.BatchList(t.Context(), "", []string{"title", "secret"}, "", 5)
-	if len(rows) != 1 || rows[0].Values["secret"] != "top-secret" {
+	rows, _, _ := e.BatchList(t.Context(), "", []string{testColumnTitle, testSecret}, "", 5)
+	if len(rows) != 1 || rows[0].Values[testSecret] != "top-secret" {
 		t.Fatalf("unindexed column missing from list: %+v", rows)
 	}
 }
@@ -838,8 +854,8 @@ func TestBatchUpsertAtomicity(t *testing.T) {
 	ctx := t.Context()
 
 	batch := map[string]map[string]string{
-		"good": {"title": "ok"},
-		"":     {"title": "bad"}, // Illegal id - should make the whole tx fail.
+		"good": {testColumnTitle: "ok"},
+		"":     {testColumnTitle: "bad"}, // Illegal id - should make the whole tx fail.
 	}
 	if err := e.BatchUpsert(ctx, batch); err == nil {
 		t.Fatalf("want error for empty id, got nil")
@@ -855,8 +871,8 @@ func TestUpsertUnknownColumnIgnored(t *testing.T) {
 	e := newTestEngine(t)
 
 	if err := e.Upsert(t.Context(), "u1", map[string]string{
-		"title":   "known",
-		"unknown": "ignored",
+		testColumnTitle: "known",
+		"unknown":       "ignored",
 	}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -885,9 +901,9 @@ func TestSearchZeroHits(t *testing.T) {
 	ctx := t.Context()
 
 	// Insert a document that does NOT contain the search term.
-	err := e.Upsert(ctx, "doc1", map[string]string{
-		"title": "hello world",
-		"body":  "this is a test",
+	err := e.Upsert(ctx, testDoc1, map[string]string{
+		testColumnTitle: testHelloWorld,
+		colBody:         "this is a test",
 	})
 	if err != nil {
 		t.Fatalf("failed to insert doc: %v", err)
@@ -909,7 +925,7 @@ func TestSearchZeroHits(t *testing.T) {
 func TestSearchOnlySpecialChars(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
-	_ = e.Upsert(ctx, "s1", map[string]string{"title": "foo", "body": ""})
+	_ = e.Upsert(ctx, "s1", map[string]string{testColumnTitle: testValueFoo, colBody: ""})
 	hits, _, _ := e.Search(ctx, "*", "", 10)
 	// Should not match anything, but should not error.
 	if len(hits) != 0 {
@@ -932,11 +948,11 @@ func TestBatchUpsertAllNilMaps(t *testing.T) {
 func TestBatchListAllUnindexed(t *testing.T) {
 	e, err := NewEngine(Config{
 		BaseDir:    t.TempDir(),
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
 		Columns: []Column{
-			{Name: "title", Unindexed: true},
-			{Name: "body", Unindexed: true},
+			{Name: testColumnTitle, Unindexed: true},
+			{Name: colBody, Unindexed: true},
 		},
 	})
 	if err != nil {
@@ -944,9 +960,9 @@ func TestBatchListAllUnindexed(t *testing.T) {
 	}
 	defer e.Close()
 
-	_ = e.Upsert(t.Context(), "d1", map[string]string{"title": "foo", "body": "bar"})
-	rows, _, _ := e.BatchList(t.Context(), "", []string{"title", "body"}, "", 5)
-	if len(rows) != 1 || rows[0].Values["title"] != "foo" {
+	_ = e.Upsert(t.Context(), "d1", map[string]string{testColumnTitle: testValueFoo, colBody: testBar})
+	rows, _, _ := e.BatchList(t.Context(), "", []string{testColumnTitle, colBody}, "", 5)
+	if len(rows) != 1 || rows[0].Values[testColumnTitle] != testValueFoo {
 		t.Fatalf("batchlist failed for all unindexed columns: %+v", rows)
 	}
 }
@@ -954,19 +970,19 @@ func TestBatchListAllUnindexed(t *testing.T) {
 func TestAllColumnsUnindexed(t *testing.T) {
 	e, err := NewEngine(Config{
 		BaseDir:    t.TempDir(),
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
 		Columns: []Column{
-			{Name: "title", Unindexed: true},
-			{Name: "body", Unindexed: true},
+			{Name: testColumnTitle, Unindexed: true},
+			{Name: colBody, Unindexed: true},
 		},
 	})
 	if err != nil {
 		t.Fatalf("init: %v", err)
 	}
 	defer e.Close()
-	_ = e.Upsert(t.Context(), "d1", map[string]string{"title": "foo", "body": "bar"})
-	hits, _, _ := e.Search(t.Context(), "foo", "", 5)
+	_ = e.Upsert(t.Context(), "d1", map[string]string{testColumnTitle: testValueFoo, colBody: testBar})
+	hits, _, _ := e.Search(t.Context(), testValueFoo, "", 5)
 	if len(hits) != 0 {
 		t.Fatalf("search should return 0 hits when all columns unindexed")
 	}
@@ -976,14 +992,14 @@ func TestBatchUpsertDuplicateIDs(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
 	docs := map[string]map[string]string{
-		"dup": {"title": "first"},
+		testDupColumnName: {testColumnTitle: "first"},
 	}
-	docs["dup"] = map[string]string{"title": "second"}
+	docs[testDupColumnName] = map[string]string{testColumnTitle: testSecond}
 	if err := e.BatchUpsert(ctx, docs); err != nil {
 		t.Fatalf("batch upsert: %v", err)
 	}
-	hits, _, _ := e.Search(ctx, "second", "", 10)
-	if len(hits) != 1 || hits[0].ID != "dup" {
+	hits, _, _ := e.Search(ctx, testSecond, "", 10)
+	if len(hits) != 1 || hits[0].ID != testDupColumnName {
 		t.Fatalf("expected only last value for dup id, hits=%+v", hits)
 	}
 }
@@ -991,7 +1007,7 @@ func TestBatchUpsertDuplicateIDs(t *testing.T) {
 func TestSpecialCharactersInQuery(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
-	_ = e.Upsert(ctx, "s1", map[string]string{"title": "foo*bar", "body": ""})
+	_ = e.Upsert(ctx, "s1", map[string]string{testColumnTitle: "foo*bar", colBody: ""})
 	hits, _, _ := e.Search(ctx, "foo*bar", "", 10)
 	if len(hits) != 1 || hits[0].ID != "s1" {
 		t.Fatalf("special char search failed, hits=%+v", hits)
@@ -1001,7 +1017,7 @@ func TestSpecialCharactersInQuery(t *testing.T) {
 func TestEmptyStringValues(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
-	err := e.Upsert(ctx, "empty", map[string]string{"title": "", "body": ""})
+	err := e.Upsert(ctx, "empty", map[string]string{testColumnTitle: "", colBody: ""})
 	if err != nil {
 		t.Fatalf("upsert empty values: %v", err)
 	}
@@ -1015,7 +1031,7 @@ func TestEmptyStringValues(t *testing.T) {
 func TestUnicodeAndDiacritics(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
-	_ = e.Upsert(ctx, "u1", map[string]string{"title": "café", "body": ""})
+	_ = e.Upsert(ctx, "u1", map[string]string{testColumnTitle: "café", colBody: ""})
 	hits, _, _ := e.Search(ctx, "cafe", "", 10)
 	if len(hits) != 1 || hits[0].ID != "u1" {
 		t.Fatalf("diacritic-insensitive search failed, hits=%+v", hits)
@@ -1028,12 +1044,12 @@ func TestVeryLongIDsAndValues(t *testing.T) {
 	longID := strings.Repeat("x", 1000)
 	longVal := strings.Repeat("foo ", 5000)
 	t.Logf("Upserting doc with ID len=%d, val len=%d", len(longID), len(longVal))
-	err := e.Upsert(ctx, longID, map[string]string{"title": longVal, "body": ""})
+	err := e.Upsert(ctx, longID, map[string]string{testColumnTitle: longVal, colBody: ""})
 	if err != nil {
 		t.Fatalf("upsert long id/val: %v", err)
 	}
 	t.Log("Upsert succeeded, searching for 'foo'")
-	hits, next, err := e.Search(ctx, "foo", "", 10)
+	hits, next, err := e.Search(ctx, testValueFoo, "", 10)
 	t.Logf("Search returned %d hits, next=%q, err=%v", len(hits), next, err)
 
 	if len(hits) != 1 || hits[0].ID != longID {
@@ -1080,13 +1096,13 @@ func TestBatchDelete(t *testing.T) {
 		{
 			name:         "delete non-existent id",
 			setupIDs:     []string{"a"},
-			deleteIDs:    []string{"notfound"},
+			deleteIDs:    []string{testNotFound},
 			expectRemain: []string{"a"},
 		},
 		{
 			name:         "delete mix of existing and non-existent",
 			setupIDs:     []string{"a", "b"},
-			deleteIDs:    []string{"a", "notfound"},
+			deleteIDs:    []string{"a", testNotFound},
 			expectRemain: []string{"b"},
 		},
 		{
@@ -1229,7 +1245,7 @@ func TestBatchDelete_NonexistentIDs(t *testing.T) {
 	e := newTestEngine(t)
 	ctx := t.Context()
 	insertDocs(t, e, []string{"a"})
-	err := e.BatchDelete(ctx, []string{"notfound"})
+	err := e.BatchDelete(ctx, []string{testNotFound})
 	if err != nil {
 		t.Fatalf("delete non-existent: %v", err)
 	}
@@ -1258,7 +1274,7 @@ func TestBatchDelete_SQLiteSpecialChars(t *testing.T) {
 func insertDocs(t *testing.T, e *Engine, ids []string) {
 	t.Helper()
 	for _, id := range ids {
-		if err := e.Upsert(t.Context(), id, map[string]string{"title": id, "body": "test"}); err != nil {
+		if err := e.Upsert(t.Context(), id, map[string]string{testColumnTitle: id, colBody: "test"}); err != nil {
 			t.Fatalf("insert %q: %v", id, err)
 		}
 	}
@@ -1270,12 +1286,12 @@ func newBatchTestEngine(t *testing.T) *Engine {
 	tmp := t.TempDir()
 	e, err := NewEngine(Config{
 		BaseDir:    tmp,
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
 		Columns: []Column{
-			{Name: "title", Weight: 1},
-			{Name: "body", Weight: 2},
-			{Name: "tag", Weight: 1},
+			{Name: testColumnTitle, Weight: 1},
+			{Name: colBody, Weight: 2},
+			{Name: testTag, Weight: 1},
 		},
 	})
 	if err != nil {
@@ -1285,17 +1301,17 @@ func newBatchTestEngine(t *testing.T) *Engine {
 	return e
 }
 
-// newTestEngine returns an engine with the two canonical columns "title" and "body".
+// newTestEngine returns an engine with the two canonical columns testColumnTitle and "body".
 func newTestEngine(t *testing.T) *Engine {
 	t.Helper()
 	tmp := t.TempDir()
 	e, err := NewEngine(Config{
 		BaseDir:    tmp,
-		DBFileName: "fts.sqlite",
-		Table:      "docs",
+		DBFileName: testDBFileName,
+		Table:      testDocsTable,
 		Columns: []Column{
-			{Name: "title", Weight: 1},
-			{Name: "body", Weight: 5},
+			{Name: testColumnTitle, Weight: 1},
+			{Name: colBody, Weight: 5},
 		},
 	})
 	if err != nil {

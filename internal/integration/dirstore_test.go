@@ -15,7 +15,63 @@ import (
 	"github.com/flexigpt/mapstore-go/jsonencdec"
 )
 
-const goosWindows = "windows"
+const (
+	goosWindows = "windows"
+
+	testKey   = "key"
+	testValue = "value"
+
+	testFileJSON  = "testfile.json"
+	emptyFileJSON = "emptyfile.json"
+	invalidDir    = "invalid"
+
+	file1JSON = "file1.json"
+	file2JSON = "file2.json"
+	file3JSON = "file3.json"
+	file4JSON = "file4.json"
+	file5JSON = "file5.json"
+	file6JSON = "file6.json"
+	file7JSON = "file7.json"
+	file8JSON = "file8.json"
+	file9JSON = "file9.json"
+
+	aJSON = "a.json"
+	bJSON = "b.json"
+	cJSON = "c.json"
+
+	appleJSON       = "apple.json"
+	apricotJSON     = "apricot.json"
+	bananaJSON      = "banana.json"
+	berryJSON       = "berry.json"
+	cherryJSON      = "cherry.json"
+	applePieJSON    = "apple_pie.json"
+	bananaBreadJSON = "banana_bread.json"
+	berryTartJSON   = "berry_tart.json"
+	zebraJSON       = "zebra.json"
+
+	partition202301 = "202301"
+	partition202302 = "202302"
+	partition202303 = "202303"
+	partition202305 = "202305"
+	partition202306 = "202306"
+	partition202307 = "202307"
+	partition202308 = "202308"
+	partition202309 = "202309"
+
+	ascendingTestName        = "Ascending"
+	descendingTestName       = "Descending"
+	invalidSortOrderValue    = "invalid"
+	invalidSortOrderTestName = "InvalidSortOrder"
+
+	applePrefix            = "apple"
+	bananaPrefix           = "banana"
+	berryPrefix            = "berry"
+	zPrefix                = "z"
+	notFoundPrefix         = "notfound"
+	apPrefix               = "ap"
+	bananaUnderscorePrefix = "banana_"
+	appleUnderscorePrefix  = "apple_"
+)
 
 func TestMapDirectoryStore_CRUD(t *testing.T) {
 	t.Parallel()
@@ -33,8 +89,8 @@ func TestMapDirectoryStore_CRUD(t *testing.T) {
 		{
 			name:               "dirpartition.NoPartitionProvider - Create File",
 			partitionProvider:  &dirpartition.NoPartitionProvider{},
-			filename:           "testfile.json",
-			data:               map[string]any{"key": "value"},
+			filename:           testFileJSON,
+			data:               map[string]any{testKey: testValue},
 			expectedPartition:  "",
 			expectedFileExists: true,
 			expectError:        false,
@@ -44,8 +100,8 @@ func TestMapDirectoryStore_CRUD(t *testing.T) {
 			partitionProvider: &dirpartition.MonthPartitionProvider{
 				TimeFn: func(fileKey mapstore.FileKey) (time.Time, error) { return now, nil },
 			},
-			filename:           "testfile.json",
-			data:               map[string]any{"key": "value"},
+			filename:           testFileJSON,
+			data:               map[string]any{testKey: testValue},
 			expectedPartition:  now.Format("200601"),
 			expectedFileExists: true,
 			expectError:        false,
@@ -53,7 +109,7 @@ func TestMapDirectoryStore_CRUD(t *testing.T) {
 		{
 			name:               "dirpartition.NoPartitionProvider - Empty Data",
 			partitionProvider:  &dirpartition.NoPartitionProvider{},
-			filename:           "emptyfile.json",
+			filename:           emptyFileJSON,
 			data:               map[string]any{},
 			expectedPartition:  "",
 			expectedFileExists: true,
@@ -62,8 +118,8 @@ func TestMapDirectoryStore_CRUD(t *testing.T) {
 		{
 			name:               "Invalid Directory (nested path without parent dir)",
 			partitionProvider:  &dirpartition.NoPartitionProvider{},
-			filename:           filepath.Join("invalid", "testfile.json"),
-			data:               map[string]any{"key": "value"},
+			filename:           filepath.Join(invalidDir, testFileJSON),
+			data:               map[string]any{testKey: testValue},
 			expectedPartition:  "",
 			expectedFileExists: false,
 			expectError:        true,
@@ -142,8 +198,8 @@ func TestMapDirectoryStore_DeleteFile(t *testing.T) {
 		t.Fatalf("failed to create MapDirectoryStore: %v", err)
 	}
 
-	filename := "testfile.json"
-	err = mds.SetFileData(mapstore.FileKey{FileName: filename}, map[string]any{"key": "value"})
+	filename := testFileJSON
+	err = mds.SetFileData(mapstore.FileKey{FileName: filename}, map[string]any{testKey: testValue})
 	if err != nil {
 		t.Fatalf("failed to set file data: %v", err)
 	}
@@ -184,9 +240,12 @@ func TestMapDirectoryStore_ListFiles_BasicAndSort(t *testing.T) {
 		t.Fatalf("failed to create MapDirectoryStore: %v", err)
 	}
 
-	files := []string{"file1.json", "file2.json", "file3.json"}
+	files := []string{file1JSON, file2JSON, file3JSON}
 	for _, filename := range files {
-		if err := mds.SetFileData(mapstore.FileKey{FileName: filename}, map[string]any{"key": "value"}); err != nil {
+		if err := mds.SetFileData(
+			mapstore.FileKey{FileName: filename},
+			map[string]any{testKey: testValue},
+		); err != nil {
 			t.Fatalf("failed to set file data: %v", err)
 		}
 	}
@@ -198,18 +257,18 @@ func TestMapDirectoryStore_ListFiles_BasicAndSort(t *testing.T) {
 		expectError   bool
 	}{
 		{
-			name:          "Ascending",
+			name:          ascendingTestName,
 			sortOrder:     mapstore.SortOrderAscending,
 			expectedFiles: files,
 		},
 		{
-			name:          "Descending",
+			name:          descendingTestName,
 			sortOrder:     mapstore.SortOrderDescending,
-			expectedFiles: []string{"file3.json", "file2.json", "file1.json"},
+			expectedFiles: []string{file3JSON, file2JSON, file1JSON},
 		},
 		{
-			name:        "InvalidSortOrder",
-			sortOrder:   "invalid",
+			name:        invalidSortOrderTestName,
+			sortOrder:   invalidSortOrderValue,
 			expectError: true,
 		},
 	}
@@ -246,10 +305,10 @@ func TestMapDirectoryStore_ListFiles_BasicAndSort(t *testing.T) {
 func TestMapDirectoryStore_ListFiles_NoPartitionProvider_Pagination(t *testing.T) {
 	baseDir := t.TempDir()
 	files := []string{
-		"file1.json", "file2.json", "file3.json", "file4.json", "file5.json",
-		"file6.json", "file7.json", "file8.json", "file9.json",
+		file1JSON, file2JSON, file3JSON, file4JSON, file5JSON,
+		file6JSON, file7JSON, file8JSON, file9JSON,
 	}
-	testData := map[string]any{"key": "value"}
+	testData := map[string]any{testKey: testValue}
 	if err := os.MkdirAll(baseDir, os.ModePerm); err != nil {
 		t.Fatalf("failed to create dir: %v", err)
 	}
@@ -271,23 +330,23 @@ func TestMapDirectoryStore_ListFiles_NoPartitionProvider_Pagination(t *testing.T
 		expectedPages [][]string
 	}{
 		{
-			name:      "Ascending",
+			name:      ascendingTestName,
 			sortOrder: mapstore.SortOrderAscending,
 			pageSize:  4,
 			expectedPages: [][]string{
-				{"file1.json", "file2.json", "file3.json", "file4.json"},
-				{"file5.json", "file6.json", "file7.json", "file8.json"},
-				{"file9.json"},
+				{file1JSON, file2JSON, file3JSON, file4JSON},
+				{file5JSON, file6JSON, file7JSON, file8JSON},
+				{file9JSON},
 			},
 		},
 		{
-			name:      "Descending",
+			name:      descendingTestName,
 			sortOrder: mapstore.SortOrderDescending,
 			pageSize:  4,
 			expectedPages: [][]string{
-				{"file9.json", "file8.json", "file7.json", "file6.json"},
-				{"file5.json", "file4.json", "file3.json", "file2.json"},
-				{"file1.json"},
+				{file9JSON, file8JSON, file7JSON, file6JSON},
+				{file5JSON, file4JSON, file3JSON, file2JSON},
+				{file1JSON},
 			},
 		},
 	}
@@ -339,9 +398,9 @@ func TestMapDirectoryStore_ListFiles_NoPartitionProvider_Pagination(t *testing.T
 
 func TestMapDirectoryStore_ListFiles_MultiPartition_Pagination(t *testing.T) {
 	baseDir := filepath.Join(t.TempDir(), "listdir")
-	partitions := []string{"202301", "202302", "202303"}
-	files := []string{"file1.json", "file2.json", "file3.json", "file4.json", "file5.json"}
-	testData := map[string]any{"key": "value"}
+	partitions := []string{partition202301, partition202302, partition202303}
+	files := []string{file1JSON, file2JSON, file3JSON, file4JSON, file5JSON}
+	testData := map[string]any{testKey: testValue}
 
 	for _, partition := range partitions {
 		partitionDir := filepath.Join(baseDir, partition)
@@ -367,55 +426,63 @@ func TestMapDirectoryStore_ListFiles_MultiPartition_Pagination(t *testing.T) {
 		expectedPages [][]string
 	}{
 		{
-			name:      "Ascending",
+			name:      ascendingTestName,
 			sortOrder: mapstore.SortOrderAscending,
 			pageSize:  4,
 			expectedPages: [][]string{
 				{
-					"202301/file1.json",
-					"202301/file2.json",
-					"202301/file3.json",
-					"202301/file4.json",
+					path.Join(partition202301, file1JSON),
+					path.Join(partition202301, file2JSON),
+					path.Join(partition202301, file3JSON),
+					path.Join(partition202301, file4JSON),
 				},
 				{
-					"202301/file5.json",
-					"202302/file1.json",
-					"202302/file2.json",
-					"202302/file3.json",
+					path.Join(partition202301, file5JSON),
+					path.Join(partition202302, file1JSON),
+					path.Join(partition202302, file2JSON),
+					path.Join(partition202302, file3JSON),
 				},
 				{
-					"202302/file4.json",
-					"202302/file5.json",
-					"202303/file1.json",
-					"202303/file2.json",
+					path.Join(partition202302, file4JSON),
+					path.Join(partition202302, file5JSON),
+					path.Join(partition202303, file1JSON),
+					path.Join(partition202303, file2JSON),
 				},
-				{"202303/file3.json", "202303/file4.json", "202303/file5.json"},
+				{
+					path.Join(partition202303, file3JSON),
+					path.Join(partition202303, file4JSON),
+					path.Join(partition202303, file5JSON),
+				},
 			},
 		},
 		{
-			name:      "Descending",
+			name:      descendingTestName,
 			sortOrder: mapstore.SortOrderDescending,
 			pageSize:  4,
 			expectedPages: [][]string{
 				{
-					"202303/file5.json",
-					"202303/file4.json",
-					"202303/file3.json",
-					"202303/file2.json",
+					path.Join(partition202303, file5JSON),
+					path.Join(partition202303, file4JSON),
+					path.Join(partition202303, file3JSON),
+					path.Join(partition202303, file2JSON),
 				},
 				{
-					"202303/file1.json",
-					"202302/file5.json",
-					"202302/file4.json",
-					"202302/file3.json",
+					path.Join(partition202303, file1JSON),
+					path.Join(partition202302, file5JSON),
+					path.Join(partition202302, file4JSON),
+					path.Join(partition202302, file3JSON),
 				},
 				{
-					"202302/file2.json",
-					"202302/file1.json",
-					"202301/file5.json",
-					"202301/file4.json",
+					path.Join(partition202302, file2JSON),
+					path.Join(partition202302, file1JSON),
+					path.Join(partition202301, file5JSON),
+					path.Join(partition202301, file4JSON),
 				},
-				{"202301/file3.json", "202301/file2.json", "202301/file1.json"},
+				{
+					path.Join(partition202301, file3JSON),
+					path.Join(partition202301, file2JSON),
+					path.Join(partition202301, file1JSON),
+				},
 			},
 		},
 	}
@@ -473,8 +540,8 @@ func TestMapDirectoryStore_ListFiles_MultiPartition_Pagination(t *testing.T) {
 
 func TestMapDirectoryStore_ListFiles_FilteredPartitions(t *testing.T) {
 	baseDir := t.TempDir()
-	partitions := []string{"202301", "202302", "202303"}
-	files := []string{"a.json", "b.json", "c.json"}
+	partitions := []string{partition202301, partition202302, partition202303}
+	files := []string{aJSON, bJSON, cJSON}
 	createFiles(t, baseDir, partitions, files)
 
 	fixedNow := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
@@ -503,9 +570,9 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions(t *testing.T) {
 			sortOrder:        mapstore.SortOrderAscending,
 			filterPartitions: nil,
 			expectedFiles: []string{
-				"202301/a.json", "202301/b.json", "202301/c.json",
-				"202302/a.json", "202302/b.json", "202302/c.json",
-				"202303/a.json", "202303/b.json", "202303/c.json",
+				path.Join(partition202301, aJSON), path.Join(partition202301, bJSON), path.Join(partition202301, cJSON),
+				path.Join(partition202302, aJSON), path.Join(partition202302, bJSON), path.Join(partition202302, cJSON),
+				path.Join(partition202303, aJSON), path.Join(partition202303, bJSON), path.Join(partition202303, cJSON),
 			},
 		},
 		{
@@ -513,33 +580,37 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions(t *testing.T) {
 			sortOrder:        mapstore.SortOrderDescending,
 			filterPartitions: nil,
 			expectedFiles: []string{
-				"202303/c.json", "202303/b.json", "202303/a.json",
-				"202302/c.json", "202302/b.json", "202302/a.json",
-				"202301/c.json", "202301/b.json", "202301/a.json",
+				path.Join(partition202303, cJSON), path.Join(partition202303, bJSON), path.Join(partition202303, aJSON),
+				path.Join(partition202302, cJSON), path.Join(partition202302, bJSON), path.Join(partition202302, aJSON),
+				path.Join(partition202301, cJSON), path.Join(partition202301, bJSON), path.Join(partition202301, aJSON),
 			},
 		},
 		{
 			name:             "Filtered, single partition",
 			sortOrder:        mapstore.SortOrderAscending,
-			filterPartitions: []string{"202302"},
-			expectedFiles:    []string{"202302/a.json", "202302/b.json", "202302/c.json"},
+			filterPartitions: []string{partition202302},
+			expectedFiles: []string{
+				path.Join(partition202302, aJSON),
+				path.Join(partition202302, bJSON),
+				path.Join(partition202302, cJSON),
+			},
 		},
 		{
 			name:             "Filtered, multiple partitions, custom order",
 			sortOrder:        mapstore.SortOrderAscending,
-			filterPartitions: []string{"202303", "202301"},
+			filterPartitions: []string{partition202303, partition202301},
 			expectedFiles: []string{
-				"202303/a.json", "202303/b.json", "202303/c.json",
-				"202301/a.json", "202301/b.json", "202301/c.json",
+				path.Join(partition202303, aJSON), path.Join(partition202303, bJSON), path.Join(partition202303, cJSON),
+				path.Join(partition202301, aJSON), path.Join(partition202301, bJSON), path.Join(partition202301, cJSON),
 			},
 		},
 		{
 			name:             "Filtered, multiple partitions, descending",
 			sortOrder:        mapstore.SortOrderDescending,
-			filterPartitions: []string{"202302", "202301"},
+			filterPartitions: []string{partition202302, partition202301},
 			expectedFiles: []string{
-				"202302/c.json", "202302/b.json", "202302/a.json",
-				"202301/c.json", "202301/b.json", "202301/a.json",
+				path.Join(partition202302, cJSON), path.Join(partition202302, bJSON), path.Join(partition202302, aJSON),
+				path.Join(partition202301, cJSON), path.Join(partition202301, bJSON), path.Join(partition202301, aJSON),
 			},
 		},
 		{
@@ -547,9 +618,9 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions(t *testing.T) {
 			sortOrder:        mapstore.SortOrderAscending,
 			filterPartitions: []string{},
 			expectedFiles: []string{
-				"202301/a.json", "202301/b.json", "202301/c.json",
-				"202302/a.json", "202302/b.json", "202302/c.json",
-				"202303/a.json", "202303/b.json", "202303/c.json",
+				path.Join(partition202301, aJSON), path.Join(partition202301, bJSON), path.Join(partition202301, cJSON),
+				path.Join(partition202302, aJSON), path.Join(partition202302, bJSON), path.Join(partition202302, cJSON),
+				path.Join(partition202303, aJSON), path.Join(partition202303, bJSON), path.Join(partition202303, cJSON),
 			},
 		},
 	}
@@ -580,8 +651,8 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions(t *testing.T) {
 
 func TestMapDirectoryStore_ListFiles_FilteredPartitions_Pagination(t *testing.T) {
 	baseDir := t.TempDir()
-	partitions := []string{"202301", "202302"}
-	files := []string{"a.json", "b.json", "c.json", "d.json"}
+	partitions := []string{partition202301, partition202302}
+	files := []string{aJSON, bJSON, cJSON, "d.json"}
 	createFiles(t, baseDir, partitions, files)
 
 	fixedNow := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
@@ -609,21 +680,37 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions_Pagination(t *testing.T)
 		{
 			name:             "Filtered, paginated, asc",
 			sortOrder:        mapstore.SortOrderAscending,
-			filterPartitions: []string{"202301", "202302"},
+			filterPartitions: []string{partition202301, partition202302},
 			expectedPages: [][]string{
-				{"202301/a.json", "202301/b.json", "202301/c.json"},
-				{"202301/d.json", "202302/a.json", "202302/b.json"},
-				{"202302/c.json", "202302/d.json"},
+				{
+					path.Join(partition202301, aJSON),
+					path.Join(partition202301, bJSON),
+					path.Join(partition202301, cJSON),
+				},
+				{
+					path.Join(partition202301, "d.json"),
+					path.Join(partition202302, aJSON),
+					path.Join(partition202302, bJSON),
+				},
+				{path.Join(partition202302, cJSON), path.Join(partition202302, "d.json")},
 			},
 		},
 		{
 			name:             "Filtered, paginated, desc",
 			sortOrder:        mapstore.SortOrderDescending,
-			filterPartitions: []string{"202302", "202301"},
+			filterPartitions: []string{partition202302, partition202301},
 			expectedPages: [][]string{
-				{"202302/d.json", "202302/c.json", "202302/b.json"},
-				{"202302/a.json", "202301/d.json", "202301/c.json"},
-				{"202301/b.json", "202301/a.json"},
+				{
+					path.Join(partition202302, "d.json"),
+					path.Join(partition202302, cJSON),
+					path.Join(partition202302, bJSON),
+				},
+				{
+					path.Join(partition202302, aJSON),
+					path.Join(partition202301, "d.json"),
+					path.Join(partition202301, cJSON),
+				},
+				{path.Join(partition202301, bJSON), path.Join(partition202301, aJSON)},
 			},
 		},
 	}
@@ -666,10 +753,10 @@ func TestMapDirectoryStore_ListFiles_FilteredPartitions_Pagination(t *testing.T)
 
 func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering(t *testing.T) {
 	baseDir := t.TempDir()
-	partitions := []string{"202301", "202302"}
+	partitions := []string{partition202301, partition202302}
 	files := []string{
-		"apple.json", "apricot.json", "banana.json", "berry.json", "cherry.json",
-		"apple_pie.json", "banana_bread.json", "berry_tart.json", "zebra.json",
+		appleJSON, apricotJSON, bananaJSON, berryJSON, cherryJSON,
+		applePieJSON, bananaBreadJSON, berryTartJSON, zebraJSON,
 	}
 	createFiles(t, baseDir, partitions, files)
 
@@ -701,116 +788,121 @@ func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering(t *testing.T) {
 			sortOrder:      mapstore.SortOrderAscending,
 			filenamePrefix: "",
 			want: want{files: []string{
-				"202301/apple.json",
-				"202301/apple_pie.json",
-				"202301/apricot.json",
-				"202301/banana.json",
-				"202301/banana_bread.json",
-				"202301/berry.json",
-				"202301/berry_tart.json",
-				"202301/cherry.json",
-				"202301/zebra.json",
-				"202302/apple.json",
-				"202302/apple_pie.json",
-				"202302/apricot.json",
-				"202302/banana.json",
-				"202302/banana_bread.json",
-				"202302/berry.json",
-				"202302/berry_tart.json",
-				"202302/cherry.json",
-				"202302/zebra.json",
+				path.Join(partition202301, appleJSON),
+				path.Join(partition202301, applePieJSON),
+				path.Join(partition202301, apricotJSON),
+				path.Join(partition202301, bananaJSON),
+				path.Join(partition202301, bananaBreadJSON),
+				path.Join(partition202301, berryJSON),
+				path.Join(partition202301, berryTartJSON),
+				path.Join(partition202301, cherryJSON),
+				path.Join(partition202301, zebraJSON),
+				path.Join(partition202302, appleJSON),
+				path.Join(partition202302, applePieJSON),
+				path.Join(partition202302, apricotJSON),
+				path.Join(partition202302, bananaJSON),
+				path.Join(partition202302, bananaBreadJSON),
+				path.Join(partition202302, berryJSON),
+				path.Join(partition202302, berryTartJSON),
+				path.Join(partition202302, cherryJSON),
+				path.Join(partition202302, zebraJSON),
 			}},
 		},
 		{
 			name:           "Prefix 'apple', ascending",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "apple",
+			filenamePrefix: applePrefix,
 			want: want{files: []string{
-				"202301/apple.json", "202301/apple_pie.json",
-				"202302/apple.json", "202302/apple_pie.json",
+				path.Join(partition202301, appleJSON), path.Join(partition202301, applePieJSON),
+				path.Join(partition202302, appleJSON), path.Join(partition202302, applePieJSON),
 			}},
 		},
 		{
 			name:           "Prefix 'banana', ascending",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "banana",
+			filenamePrefix: bananaPrefix,
 			want: want{files: []string{
-				"202301/banana.json", "202301/banana_bread.json",
-				"202302/banana.json", "202302/banana_bread.json",
+				path.Join(partition202301, bananaJSON), path.Join(partition202301, bananaBreadJSON),
+				path.Join(partition202302, bananaJSON), path.Join(partition202302, bananaBreadJSON),
 			}},
 		},
 		{
 			name:           "Prefix 'berry', descending",
 			sortOrder:      mapstore.SortOrderDescending,
-			filenamePrefix: "berry",
+			filenamePrefix: berryPrefix,
 			want: want{files: []string{
-				"202302/berry_tart.json", "202302/berry.json",
-				"202301/berry_tart.json", "202301/berry.json",
+				path.Join(partition202302, berryTartJSON), path.Join(partition202302, berryJSON),
+				path.Join(partition202301, berryTartJSON), path.Join(partition202301, berryJSON),
 			}},
 		},
 		{
 			name:           "Prefix 'z', ascending",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "z",
+			filenamePrefix: zPrefix,
 			want: want{files: []string{
-				"202301/zebra.json", "202302/zebra.json",
+				path.Join(partition202301, zebraJSON), path.Join(partition202302, zebraJSON),
 			}},
 		},
 		{
 			name:           "Prefix 'notfound', ascending",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "notfound",
+			filenamePrefix: notFoundPrefix,
 			want:           want{files: []string{}},
 		},
 		{
 			name:             "Prefix '', filtered partition",
 			sortOrder:        mapstore.SortOrderAscending,
-			filterPartitions: []string{"202301"},
+			filterPartitions: []string{partition202301},
 			filenamePrefix:   "",
 			want: want{files: []string{
-				"202301/apple.json",
-				"202301/apple_pie.json",
-				"202301/apricot.json",
-				"202301/banana.json",
-				"202301/banana_bread.json",
-				"202301/berry.json",
-				"202301/berry_tart.json",
-				"202301/cherry.json",
-				"202301/zebra.json",
+				path.Join(partition202301, appleJSON),
+				path.Join(partition202301, applePieJSON),
+				path.Join(partition202301, apricotJSON),
+				path.Join(partition202301, bananaJSON),
+				path.Join(partition202301, bananaBreadJSON),
+				path.Join(partition202301, berryJSON),
+				path.Join(partition202301, berryTartJSON),
+				path.Join(partition202301, cherryJSON),
+				path.Join(partition202301, zebraJSON),
 			}},
 		},
 		{
 			name:             "Prefix 'ap', filtered partition",
 			sortOrder:        mapstore.SortOrderAscending,
-			filterPartitions: []string{"202302"},
-			filenamePrefix:   "ap",
+			filterPartitions: []string{partition202302},
+			filenamePrefix:   apPrefix,
 			want: want{files: []string{
-				"202302/apple.json", "202302/apple_pie.json", "202302/apricot.json",
+				path.Join(
+					partition202302,
+					appleJSON,
+				),
+				path.Join(partition202302, applePieJSON),
+				path.Join(partition202302, apricotJSON),
 			}},
 		},
 		{
 			name:             "Prefix 'berry', filtered partition, descending",
 			sortOrder:        mapstore.SortOrderDescending,
-			filterPartitions: []string{"202301"},
-			filenamePrefix:   "berry",
+			filterPartitions: []string{partition202301},
+			filenamePrefix:   berryPrefix,
 			want: want{files: []string{
-				"202301/berry_tart.json", "202301/berry.json",
+				path.Join(partition202301, berryTartJSON), path.Join(partition202301, berryJSON),
 			}},
 		},
 		{
 			name:           "Prefix with underscore",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "banana_",
+			filenamePrefix: bananaUnderscorePrefix,
 			want: want{files: []string{
-				"202301/banana_bread.json", "202302/banana_bread.json",
+				path.Join(partition202301, bananaBreadJSON), path.Join(partition202302, bananaBreadJSON),
 			}},
 		},
 		{
 			name:           "Prefix with special char",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "apple_",
+			filenamePrefix: appleUnderscorePrefix,
 			want: want{files: []string{
-				"202301/apple_pie.json", "202302/apple_pie.json",
+				path.Join(partition202301, applePieJSON), path.Join(partition202302, applePieJSON),
 			}},
 		},
 	}
@@ -845,10 +937,10 @@ func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering(t *testing.T) {
 
 func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering_Pagination(t *testing.T) {
 	baseDir := t.TempDir()
-	partitions := []string{"202301"}
+	partitions := []string{partition202301}
 	files := []string{
-		"apple.json", "apricot.json", "banana.json", "berry.json", "cherry.json",
-		"apple_pie.json", "banana_bread.json", "berry_tart.json", "zebra.json",
+		appleJSON, apricotJSON, bananaJSON, berryJSON, cherryJSON,
+		applePieJSON, bananaBreadJSON, berryTartJSON, zebraJSON,
 	}
 	createFiles(t, baseDir, partitions, files)
 
@@ -878,9 +970,9 @@ func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering_Pagination(t *testi
 		{
 			name:           "Prefix 'apple', ascending, paginated",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "apple",
+			filenamePrefix: applePrefix,
 			expectedPages: []pageWant{
-				{files: []string{"202301/apple.json", "202301/apple_pie.json"}},
+				{files: []string{path.Join(partition202301, appleJSON), path.Join(partition202301, applePieJSON)}},
 			},
 		},
 		{
@@ -888,24 +980,24 @@ func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering_Pagination(t *testi
 			sortOrder:      mapstore.SortOrderAscending,
 			filenamePrefix: "b",
 			expectedPages: []pageWant{
-				{files: []string{"202301/banana.json", "202301/banana_bread.json"}},
-				{files: []string{"202301/berry.json", "202301/berry_tart.json"}},
+				{files: []string{path.Join(partition202301, bananaJSON), path.Join(partition202301, bananaBreadJSON)}},
+				{files: []string{path.Join(partition202301, berryJSON), path.Join(partition202301, berryTartJSON)}},
 			},
 		},
 		{
 			name:           "Prefix 'berry', ascending, paginated",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "berry",
+			filenamePrefix: berryPrefix,
 			expectedPages: []pageWant{
-				{files: []string{"202301/berry.json", "202301/berry_tart.json"}},
+				{files: []string{path.Join(partition202301, berryJSON), path.Join(partition202301, berryTartJSON)}},
 			},
 		},
 		{
 			name:           "Prefix 'z', ascending, paginated",
 			sortOrder:      mapstore.SortOrderAscending,
-			filenamePrefix: "z",
+			filenamePrefix: zPrefix,
 			expectedPages: []pageWant{
-				{files: []string{"202301/zebra.json"}},
+				{files: []string{path.Join(partition202301, zebraJSON)}},
 			},
 		},
 		{
@@ -913,11 +1005,11 @@ func TestMapDirectoryStore_ListFiles_FilenamePrefixFiltering_Pagination(t *testi
 			sortOrder:      mapstore.SortOrderAscending,
 			filenamePrefix: "",
 			expectedPages: []pageWant{
-				{files: []string{"202301/apple.json", "202301/apple_pie.json"}},
-				{files: []string{"202301/apricot.json", "202301/banana.json"}},
-				{files: []string{"202301/banana_bread.json", "202301/berry.json"}},
-				{files: []string{"202301/berry_tart.json", "202301/cherry.json"}},
-				{files: []string{"202301/zebra.json"}},
+				{files: []string{path.Join(partition202301, appleJSON), path.Join(partition202301, applePieJSON)}},
+				{files: []string{path.Join(partition202301, apricotJSON), path.Join(partition202301, bananaJSON)}},
+				{files: []string{path.Join(partition202301, bananaBreadJSON), path.Join(partition202301, berryJSON)}},
+				{files: []string{path.Join(partition202301, berryTartJSON), path.Join(partition202301, cherryJSON)}},
+				{files: []string{path.Join(partition202301, zebraJSON)}},
 			},
 		},
 	}
@@ -987,7 +1079,7 @@ func TestMapDirectoryStore_ListPartitions_Pagination(t *testing.T) {
 		t.Fatalf("failed to create MapDirectoryStore: %v", err)
 	}
 
-	partitions := []string{"202301", "202302", "202303"}
+	partitions := []string{partition202301, partition202302, partition202303}
 	for _, partition := range partitions {
 		if err := os.Mkdir(filepath.Join(baseDir, partition), os.ModePerm); err != nil {
 			t.Fatalf("failed to create partition directory: %v", err)
@@ -1003,22 +1095,22 @@ func TestMapDirectoryStore_ListPartitions_Pagination(t *testing.T) {
 		expectError   bool
 	}{
 		{
-			name:          "Ascending",
+			name:          ascendingTestName,
 			sortOrder:     mapstore.SortOrderAscending,
 			pageToken:     "",
 			pageSize:      2,
-			expectedParts: []string{"202301", "202302"},
+			expectedParts: []string{partition202301, partition202302},
 		},
 		{
-			name:          "Descending",
+			name:          descendingTestName,
 			sortOrder:     mapstore.SortOrderDescending,
 			pageToken:     "",
 			pageSize:      2,
-			expectedParts: []string{"202303", "202302"},
+			expectedParts: []string{partition202303, partition202302},
 		},
 		{
-			name:        "InvalidSortOrder",
-			sortOrder:   "invalid",
+			name:        invalidSortOrderTestName,
+			sortOrder:   invalidSortOrderValue,
 			pageToken:   "",
 			pageSize:    2,
 			expectError: true,
@@ -1072,7 +1164,7 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 		TimeFn: func(filekey mapstore.FileKey) (time.Time, error) { return fixedNow, nil },
 	}
 
-	t.Run("InvalidSortOrder", func(t *testing.T) {
+	t.Run(invalidSortOrderTestName, func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
 		mds, err := mapstore.NewMapDirectoryStore(
@@ -1139,14 +1231,14 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 			t.Fatalf("failed to create MapDirectoryStore: %v", err)
 		}
 
-		partition := "202301"
+		partition := partition202301
 		dir := filepath.Join(baseDir, partition)
 
 		// Create dir & a file first, then remove permissions.
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("failed to create dir: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, "a.json"), []byte(`{"k":"v"}`), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, aJSON), []byte(`{"k":"v"}`), 0o600); err != nil {
 			t.Fatalf("failed to write file: %v", err)
 		}
 
@@ -1256,13 +1348,13 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create MapDirectoryStore: %v", err)
 		}
-		partitions := []string{"202302"}
-		files := []string{"a.json"}
+		partitions := []string{partition202302}
+		files := []string{aJSON}
 		createFiles(t, baseDir, partitions, files)
 		_, _, err = mds.ListFiles(
 			mapstore.ListingConfig{
 				SortOrder:        mapstore.SortOrderAscending,
-				FilterPartitions: []string{"202301", "doesnotexist"},
+				FilterPartitions: []string{partition202301, "doesnotexist"},
 			},
 			"",
 		)
@@ -1274,8 +1366,8 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	t.Run("PageSizeLargerThanFiles", func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
-		partitions := []string{"202303"}
-		files := []string{"a.json", "b.json"}
+		partitions := []string{partition202303}
+		files := []string{aJSON, bJSON}
 		createFiles(t, baseDir, partitions, files)
 		mds, err := mapstore.NewMapDirectoryStore(
 			baseDir,
@@ -1302,8 +1394,8 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	t.Run("EmptyFilterPartitions", func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
-		partitions := []string{"202305"}
-		files := []string{"a.json"}
+		partitions := []string{partition202305}
+		files := []string{aJSON}
 		createFiles(t, baseDir, partitions, files)
 		mds, err := mapstore.NewMapDirectoryStore(
 			baseDir,
@@ -1331,8 +1423,8 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	t.Run("FilenamePrefixFiltering_NoMatch", func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
-		partitions := []string{"202306"}
-		files := []string{"apple.json", "banana.json"}
+		partitions := []string{partition202306}
+		files := []string{appleJSON, bananaJSON}
 		createFiles(t, baseDir, partitions, files)
 		mds, err := mapstore.NewMapDirectoryStore(
 			baseDir,
@@ -1360,9 +1452,9 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	t.Run("FilteredPagination_EmptyPartition", func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
-		files := []string{"a.json"}
-		createFiles(t, baseDir, []string{"202307"}, files)
-		if err := os.MkdirAll(filepath.Join(baseDir, "202302"), 0o755); err != nil {
+		files := []string{aJSON}
+		createFiles(t, baseDir, []string{partition202307}, files)
+		if err := os.MkdirAll(filepath.Join(baseDir, partition202302), 0o755); err != nil {
 			t.Fatalf("failed to create partition dir: %v", err)
 		}
 		mds, err := mapstore.NewMapDirectoryStore(
@@ -1378,14 +1470,14 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 		got, nextPageToken, err := mds.ListFiles(
 			mapstore.ListingConfig{
 				SortOrder:        mapstore.SortOrderAscending,
-				FilterPartitions: []string{"202307", "202302"},
+				FilterPartitions: []string{partition202307, partition202302},
 			},
 			"",
 		)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(got) != 1 || normalizeRel(got[0].BaseRelativePath) != normalizeRel("202307/a.json") {
+		if len(got) != 1 || normalizeRel(got[0].BaseRelativePath) != normalizeRel(path.Join(partition202307, aJSON)) {
 			t.Fatalf("expected [202307/a.json], got %v", got)
 		}
 		if nextPageToken != "" {
@@ -1396,9 +1488,9 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 	t.Run("FilenamePrefixFiltering_EmptyPartition", func(t *testing.T) {
 		t.Parallel()
 		baseDir := t.TempDir()
-		files := []string{"apple.json", "banana.json"}
-		createFiles(t, baseDir, []string{"202308"}, files)
-		if err := os.MkdirAll(filepath.Join(baseDir, "202309"), 0o755); err != nil {
+		files := []string{appleJSON, bananaJSON}
+		createFiles(t, baseDir, []string{partition202308}, files)
+		if err := os.MkdirAll(filepath.Join(baseDir, partition202309), 0o755); err != nil {
 			t.Fatalf("failed to create partition dir: %v", err)
 		}
 		mds, err := mapstore.NewMapDirectoryStore(
@@ -1414,15 +1506,16 @@ func TestMapDirectoryStore_ListFiles_ErrorsAndEdgeCases(t *testing.T) {
 		got, nextPageToken, err := mds.ListFiles(
 			mapstore.ListingConfig{
 				SortOrder:        mapstore.SortOrderAscending,
-				FilterPartitions: []string{"202308", "202309"},
-				FilenamePrefix:   "apple",
+				FilterPartitions: []string{partition202308, partition202309},
+				FilenamePrefix:   applePrefix,
 			},
 			"",
 		)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if len(got) != 1 || normalizeRel(got[0].BaseRelativePath) != normalizeRel("202308/apple.json") {
+		if len(got) != 1 ||
+			normalizeRel(got[0].BaseRelativePath) != normalizeRel(path.Join(partition202308, appleJSON)) {
 			t.Fatalf("expected [202308/apple.json], got %v", got)
 		}
 		if nextPageToken != "" {

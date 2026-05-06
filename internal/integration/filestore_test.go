@@ -19,6 +19,27 @@ import (
 	"github.com/flexigpt/mapstore-go/keyringencdec"
 )
 
+const (
+	fileStoreFoo             = "foo"
+	fileStoreBar             = "bar"
+	fileStoreHello           = "hello"
+	fileStoreDefaultKey      = "k"
+	fileStoreDefaultValue    = "v"
+	fileStoreParent          = "parent"
+	fileStoreChild           = "child"
+	fileStoreGrand           = "grand"
+	fileStoreValue           = "value"
+	fileStoreDeep            = "deep"
+	fileStoreKey1            = "key1"
+	fileStoreKey2            = "key2"
+	fileStoreOriginal        = "original"
+	fileStoreInvalid         = "invalid"
+	fileStoreRoot            = "root"
+	fileStoreNewValueForFoo  = "new value for foo"
+	fileStoreNewValueForBar  = "new value for bar"
+	fileStoreParentChildPath = fileStoreParent + "." + fileStoreChild
+)
+
 func TestMapFileStoreExtended(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -30,26 +51,28 @@ func TestMapFileStoreExtended(t *testing.T) {
 		{
 			name: "test with per-key encoders",
 			initialData: map[string]any{
-				"foo":    "hello",
-				"bar":    "world",
-				"parent": map[string]any{"child": "secret"},
+				fileStoreFoo: fileStoreHello,
+				fileStoreBar: "world",
+				fileStoreParent: map[string]any{
+					fileStoreChild: "secret",
+				},
 			},
 			keyEncDecs: map[string]mapstore.IOEncoderDecoder{
 				// Example: "foo" => reverseStringEncoderDecoder{}, etc.
-				"foo":          reverseStringEncoderDecoder{},
-				"parent.child": reverseStringEncoderDecoder{},
+				fileStoreFoo:             reverseStringEncoderDecoder{},
+				fileStoreParentChildPath: reverseStringEncoderDecoder{},
 			},
 			operations: []operation{
-				setKeyOperation{key: "foo", value: "new value for foo"},
-				getKeyOperation{key: "foo", expectedValue: "new value for foo"},
-				setKeyOperation{key: "bar", value: "new value for bar"},
-				getKeyOperation{key: "bar", expectedValue: "new value for bar"},
+				setKeyOperation{key: fileStoreFoo, value: fileStoreNewValueForFoo},
+				getKeyOperation{key: fileStoreFoo, expectedValue: fileStoreNewValueForFoo},
+				setKeyOperation{key: fileStoreBar, value: fileStoreNewValueForBar},
+				getKeyOperation{key: fileStoreBar, expectedValue: fileStoreNewValueForBar},
 			},
 			expectedFinalData: map[string]any{
-				"foo": "new value for foo",
-				"bar": "new value for bar",
-				"parent": map[string]any{
-					"child": "secret",
+				fileStoreFoo: fileStoreNewValueForFoo,
+				fileStoreBar: fileStoreNewValueForBar,
+				fileStoreParent: map[string]any{
+					fileStoreChild: "secret",
 				},
 			},
 		},
@@ -278,14 +301,14 @@ func TestMapFileStore(t *testing.T) {
 		{
 			name:        "File does not exist, createIfNotExists true",
 			filename:    filepath.Join(tempDir, "store1.json"),
-			defaultData: map[string]any{"k": "v"},
+			defaultData: map[string]any{fileStoreDefaultKey: fileStoreDefaultValue},
 			options:     []mapstore.FileOption{mapstore.WithCreateIfNotExists(true)},
 			expectError: false,
 		},
 		{
 			name:              "File does not exist, createIfNotExists false",
 			filename:          filepath.Join(tempDir, "store2.json"),
-			defaultData:       map[string]any{"k": "v"},
+			defaultData:       map[string]any{fileStoreDefaultKey: fileStoreDefaultValue},
 			options:           []mapstore.FileOption{mapstore.WithCreateIfNotExists(false)},
 			expectError:       true,
 			expectedErrorText: "does not exist",
@@ -293,7 +316,7 @@ func TestMapFileStore(t *testing.T) {
 		{
 			name:        "File exists with valid content",
 			filename:    filepath.Join(tempDir, "store3.json"),
-			defaultData: map[string]any{"k": "v"},
+			defaultData: map[string]any{fileStoreDefaultKey: fileStoreDefaultValue},
 			createFile:  true,
 			fileContent: `{"foo":"bar"}`,
 			options:     []mapstore.FileOption{},
@@ -302,7 +325,7 @@ func TestMapFileStore(t *testing.T) {
 		{
 			name:        "File exists with invalid content",
 			filename:    filepath.Join(tempDir, "store4.json"),
-			defaultData: map[string]any{"k": "v"},
+			defaultData: map[string]any{fileStoreDefaultKey: fileStoreDefaultValue},
 			createFile:  true,
 			fileContent: `{invalid json}`,
 			options:     []mapstore.FileOption{},
@@ -311,7 +334,7 @@ func TestMapFileStore(t *testing.T) {
 		{
 			name:        "File exists but cannot open",
 			filename:    filepath.Join(tempDir, "store5.json"),
-			defaultData: map[string]any{"k": "v"},
+			defaultData: map[string]any{fileStoreDefaultKey: fileStoreDefaultValue},
 			createFile:  true,
 			fileContent: `{"foo":"bar"}`,
 			options:     []mapstore.FileOption{},
@@ -329,7 +352,7 @@ func TestMapFileStore(t *testing.T) {
 		}
 
 		if tt.name == "File exists but cannot open" {
-			if runtime.GOOS == goosWindows {
+			if runtime.GOOS == "windows" {
 				t.Skip("chmod(000) does not reliably prevent opening files on Windows")
 			}
 			// Create a file with no read permissions.
@@ -366,7 +389,7 @@ func TestMapFileStore(t *testing.T) {
 func TestMapFileStore_SetKey_GetKey(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore.json")
-	defaultData := map[string]any{"foo": "bar"}
+	defaultData := map[string]any{fileStoreFoo: fileStoreBar}
 
 	encoderDecoder1, err := keyringencdec.NewEncryptedStringValueEncoderDecoder("keyringencdec", "user1")
 	if err != nil {
@@ -379,8 +402,8 @@ func TestMapFileStore_SetKey_GetKey(t *testing.T) {
 
 	// Example: We'll return an EncoderDecoder for the paths "foo" and "parent.child".
 	valueEncDecs := map[string]mapstore.IOEncoderDecoder{
-		"foo":          encoderDecoder1,
-		"parent.child": encoderDecoder2,
+		fileStoreFoo:             encoderDecoder1,
+		fileStoreParentChildPath: encoderDecoder2,
 	}
 
 	store, err := mapstore.NewMapFileStore(
@@ -410,29 +433,29 @@ func TestMapFileStore_SetKey_GetKey(t *testing.T) {
 	}{
 		{
 			name:  "Set and get simple key",
-			keys:  []string{"foo"},
-			value: "bar",
+			keys:  []string{fileStoreFoo},
+			value: fileStoreBar,
 		},
 		{
 			name:  "Set and get nested key",
-			keys:  []string{"parent", "child"},
+			keys:  []string{fileStoreParent, fileStoreChild},
 			value: "grandson",
 		},
 		{
 			name:  "Set and get deep nested key",
-			keys:  []string{"grand", "parent", "child", "key"},
+			keys:  []string{fileStoreGrand, fileStoreParent, fileStoreChild, fileStoreKey1},
 			value: true,
 		},
 		{
 			name:       "Set empty key slice",
 			keys:       []string{},
-			value:      "value",
+			value:      fileStoreValue,
 			wantErrSet: true,
 		},
 		{
 			name:       "Set key with empty segment (like parent..child in dotted form)",
-			keys:       []string{"parent", "", "child"},
-			value:      "value",
+			keys:       []string{fileStoreParent, "", fileStoreChild},
+			value:      fileStoreValue,
 			wantErrSet: true,
 		},
 	}
@@ -472,17 +495,21 @@ func TestMapFileStore_DeleteKey(t *testing.T) {
 	filename := filepath.Join(tempDir, "teststore.json")
 	// Pre-populate the store.
 	initialData := map[string]any{
-		"foo":    "bar",
-		"parent": map[string]any{"child": "value"},
-		"grand": map[string]any{
-			"parent": map[string]any{"child": map[string]any{"key": "deep"}},
+		fileStoreFoo: fileStoreBar,
+		fileStoreParent: map[string]any{
+			fileStoreChild: fileStoreValue,
+		},
+		fileStoreGrand: map[string]any{
+			fileStoreParent: map[string]any{
+				fileStoreChild: map[string]any{fileStoreKey1: fileStoreDeep},
+			},
 		},
 		"nondeletable": "persist",
-		"empty":        map[string]any{"parent": map[string]any{}},
+		"empty":        map[string]any{fileStoreParent: map[string]any{}},
 		"list":         []any{1, 2, 3},
 		"nonexistent":  nil,
 		"another": map[string]any{
-			"parent": map[string]any{"child1": "val1", "child2": "val2"},
+			fileStoreParent: map[string]any{"child1": "val1", "child2": "val2"},
 		},
 	}
 
@@ -504,17 +531,17 @@ func TestMapFileStore_DeleteKey(t *testing.T) {
 	}{
 		{
 			name:       "Delete simple key",
-			keys:       []string{"foo"},
+			keys:       []string{fileStoreFoo},
 			checkExist: true,
 		},
 		{
 			name:       "Delete nested key",
-			keys:       []string{"parent", "child"},
+			keys:       []string{fileStoreParent, fileStoreChild},
 			checkExist: true,
 		},
 		{
 			name:       "Delete deep nested key",
-			keys:       []string{"grand", "parent", "child", "key"},
+			keys:       []string{fileStoreGrand, fileStoreParent, fileStoreChild, fileStoreKey1},
 			checkExist: true,
 		},
 		{
@@ -524,17 +551,17 @@ func TestMapFileStore_DeleteKey(t *testing.T) {
 		},
 		{
 			name:    "Delete key with empty segment",
-			keys:    []string{"parent", "", "child"},
+			keys:    []string{fileStoreParent, "", fileStoreChild},
 			wantErr: false,
 		},
 		{
 			name:       "Delete empty map",
-			keys:       []string{"empty", "parent"},
+			keys:       []string{"empty", fileStoreParent},
 			checkExist: true,
 		},
 		{
 			name:       "Delete from map with multiple keys",
-			keys:       []string{"another", "parent", "child1"},
+			keys:       []string{"another", fileStoreParent, "child1"},
 			checkExist: true,
 		},
 	}
@@ -569,7 +596,7 @@ func TestMapFileStore_DeleteKey(t *testing.T) {
 func TestMapFileStore_SetAll_GetAll(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore.json")
-	defaultData := map[string]any{"foo": "bar"}
+	defaultData := map[string]any{fileStoreFoo: fileStoreBar}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -591,24 +618,24 @@ func TestMapFileStore_SetAll_GetAll(t *testing.T) {
 		{
 			name: "Set and get all simple data",
 			data: map[string]any{
-				"key1": "value1",
-				"key2": 2,
+				fileStoreKey1: fileStoreValue,
+				fileStoreKey2: 2,
 			},
 			expectedData: map[string]any{
-				"key1": "value1",
-				"key2": 2,
+				fileStoreKey1: fileStoreValue,
+				fileStoreKey2: 2,
 			},
 		},
 		{
 			name: "Set and get all nested data",
 			data: map[string]any{
-				"parent": map[string]any{
-					"child": "value",
+				fileStoreParent: map[string]any{
+					fileStoreChild: fileStoreValue,
 				},
 			},
 			expectedData: map[string]any{
-				"parent": map[string]any{
-					"child": "value",
+				fileStoreParent: map[string]any{
+					fileStoreChild: fileStoreValue,
 				},
 			},
 		},
@@ -619,14 +646,14 @@ func TestMapFileStore_SetAll_GetAll(t *testing.T) {
 		{
 			name: "Modify returned data should not affect store",
 			data: map[string]any{
-				"original": "value",
+				fileStoreOriginal: fileStoreValue,
 			},
 			expectedData: map[string]any{
-				"original": "value",
+				fileStoreOriginal: fileStoreValue,
 			},
 			modifyData: true,
 			expectedAfter: map[string]any{
-				"original": "value",
+				fileStoreOriginal: fileStoreValue,
 			},
 		},
 	}
@@ -656,7 +683,7 @@ func TestMapFileStore_SetAll_GetAll(t *testing.T) {
 			}
 
 			if tt.modifyData {
-				got["original"] = "modified"
+				got[fileStoreOriginal] = "modified"
 				gotAfterModification, err := store.GetAll(false)
 				if err != nil {
 					t.Errorf("Failed to get data err: %v", err)
@@ -677,7 +704,7 @@ func TestMapFileStore_SetAll_GetAll(t *testing.T) {
 func TestMapFileStore_DeleteAll(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore.json")
-	defaultData := map[string]any{"foo": "bar"}
+	defaultData := map[string]any{fileStoreFoo: fileStoreBar}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -690,9 +717,9 @@ func TestMapFileStore_DeleteAll(t *testing.T) {
 
 	// Re-populate the store.
 	initialData := map[string]any{
-		"key1": "value1",
-		"key2": 2,
-		"key3": true,
+		fileStoreKey1: fileStoreValue,
+		fileStoreKey2: 2,
+		"key3":        true,
 	}
 	err = store.SetAll(initialData)
 	if err != nil {
@@ -716,7 +743,7 @@ func TestMapFileStore_DeleteAll(t *testing.T) {
 func TestMapFileStore_AutoFlush(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore_autoflush.json")
-	defaultData := map[string]any{"k": "v"}
+	defaultData := map[string]any{fileStoreDefaultKey: fileStoreDefaultValue}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -728,7 +755,7 @@ func TestMapFileStore_AutoFlush(t *testing.T) {
 		t.Fatalf("Failed to create store: %v", err)
 	}
 
-	err = store.SetKey([]string{"foo"}, "bar")
+	err = store.SetKey([]string{fileStoreFoo}, fileStoreBar)
 	if err != nil {
 		t.Fatalf("SetKey failed: %v", err)
 	}
@@ -739,11 +766,11 @@ func TestMapFileStore_AutoFlush(t *testing.T) {
 		t.Fatalf("Failed to reopen store: %v", err)
 	}
 
-	val, err := store2.GetKey([]string{"foo"})
+	val, err := store2.GetKey([]string{fileStoreFoo})
 	if err != nil {
 		t.Fatalf("GetKey failed: %v", err)
 	}
-	if val != "bar" {
+	if val != fileStoreBar {
 		t.Errorf("Expected 'bar', got %v", val)
 	}
 }
@@ -751,7 +778,7 @@ func TestMapFileStore_AutoFlush(t *testing.T) {
 func TestMapFileStore_NoAutoFlush(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore_noautoflush.json")
-	defaultData := map[string]any{"k": "v"}
+	defaultData := map[string]any{fileStoreDefaultKey: fileStoreDefaultValue}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -763,7 +790,7 @@ func TestMapFileStore_NoAutoFlush(t *testing.T) {
 		t.Fatalf("Failed to create store: %v", err)
 	}
 
-	err = store.SetKey([]string{"foo"}, "bar")
+	err = store.SetKey([]string{fileStoreFoo}, fileStoreBar)
 	if err != nil {
 		t.Fatalf("SetKey failed: %v", err)
 	}
@@ -774,7 +801,7 @@ func TestMapFileStore_NoAutoFlush(t *testing.T) {
 		t.Fatalf("Failed to reopen store: %v", err)
 	}
 
-	_, err = store2.GetKey([]string{"foo"})
+	_, err = store2.GetKey([]string{fileStoreFoo})
 	if err == nil {
 		t.Errorf("Expected error getting 'foo' from store2 as it should not be saved yet")
 	}
@@ -790,22 +817,22 @@ func TestMapFileStore_NoAutoFlush(t *testing.T) {
 		t.Fatalf("Failed to reopen store after save: %v", err)
 	}
 
-	val, err := store3.GetKey([]string{"foo"})
+	val, err := store3.GetKey([]string{fileStoreFoo})
 	if err != nil {
 		t.Fatalf("GetKey failed: %v", err)
 	}
-	if val != "bar" {
+	if val != fileStoreBar {
 		t.Errorf("Expected 'bar', got %v", val)
 	}
 }
 
 func TestMapFileStorePermissionErrorCases(t *testing.T) {
-	if runtime.GOOS == goosWindows {
+	if runtime.GOOS == "windows" {
 		t.Skip("chmod does not reliably prevent opening files on Windows")
 	}
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore_errors.json")
-	defaultData := map[string]any{"k": "v"}
+	defaultData := map[string]any{fileStoreDefaultKey: fileStoreDefaultValue}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -824,7 +851,7 @@ func TestMapFileStorePermissionErrorCases(t *testing.T) {
 	ch := func() { _ = os.Chmod(filename, 0o644) }
 	defer ch()
 
-	err = store.SetKey([]string{"foo"}, "bar")
+	err = store.SetKey([]string{fileStoreFoo}, fileStoreBar)
 	if err == nil {
 		t.Errorf("Expected error in SetKey due to unwritable file, but got nil")
 	}
@@ -848,7 +875,7 @@ func TestMapFileStorePermissionErrorCases(t *testing.T) {
 func TestMapFileStore_NestedStructures(t *testing.T) {
 	tempDir := t.TempDir()
 	filename := filepath.Join(tempDir, "teststore_nested.json")
-	defaultData := map[string]any{"k": "v"}
+	defaultData := map[string]any{fileStoreDefaultKey: fileStoreDefaultValue}
 	store, err := mapstore.NewMapFileStore(
 		filename,
 		defaultData,
@@ -868,23 +895,23 @@ func TestMapFileStore_NestedStructures(t *testing.T) {
 	}{
 		{
 			name:  "Set nested map",
-			keys:  []string{"parent", "child"},
-			value: "value",
+			keys:  []string{fileStoreParent, fileStoreChild},
+			value: fileStoreValue,
 		},
 		{
 			name:  "Set nested map with existing parent",
-			keys:  []string{"parent", "anotherChild"},
+			keys:  []string{fileStoreParent, "anotherChild"},
 			value: 123,
 		},
 		{
 			name:  "Set deep nested map",
-			keys:  []string{"grand", "parent", "child"},
+			keys:  []string{fileStoreGrand, fileStoreParent, fileStoreChild},
 			value: true,
 		},
 		{
 			name:  "Set value where intermediate is not a map",
-			keys:  []string{"parent", "child", "key"},
-			value: "invalid",
+			keys:  []string{fileStoreParent, fileStoreChild, fileStoreKey1},
+			value: fileStoreInvalid,
 			// 'parent.child' is a string, cannot set 'key' under it.
 			expectErr: true,
 		},
@@ -954,7 +981,7 @@ func TestMapFileStore_KeyEncodingDecoding(t *testing.T) {
 		}{
 			{
 				name:  "simple top-level key",
-				keys:  []string{"hello"},
+				keys:  []string{fileStoreHello},
 				value: "world",
 			},
 			{
@@ -968,10 +995,9 @@ func TestMapFileStore_KeyEncodingDecoding(t *testing.T) {
 				value: true,
 			},
 			{
-				name:  "empty key slice",
-				keys:  []string{},
-				value: "value",
-				// Cannot set root.
+				name:       "empty key slice",
+				keys:       []string{},
+				value:      fileStoreValue,
 				wantErrSet: true,
 			},
 		}
@@ -1027,7 +1053,7 @@ func TestMapFileStore_KeyEncodingDecoding(t *testing.T) {
 
 		// Try retrieving some keys we set in the previous sub-test.
 		keysToCheck := [][]string{
-			{"hello"},
+			{fileStoreHello},
 			{"level1", "level2"},
 			{"grandlevel", "parentlevel", "childlevel"},
 		}
@@ -1109,16 +1135,16 @@ func TestMapFileStore_SetAll_KeyEncDec(t *testing.T) {
 		{
 			name: "nested maps inside setAll",
 			data: map[string]any{
-				"root": map[string]any{
+				fileStoreRoot: map[string]any{
 					"inner": "val1",
-					"deep": map[string]any{
+					fileStoreDeep: map[string]any{
 						"level": 42,
 					},
 				},
 			},
 			keysToCheck: [][]string{
-				{"root", "inner"},
-				{"root", "deep", "level"},
+				{fileStoreRoot, "inner"},
+				{fileStoreRoot, fileStoreDeep, "level"},
 			},
 		},
 	}
@@ -1179,8 +1205,6 @@ func TestEvents_MultipleListeners_IdenticalOrder(t *testing.T) {
 
 // AutoFlush = false -> event fires, disk unchanged until Flush().
 func TestEvents_AutoFlushFalse(t *testing.T) {
-	const key = "foo"
-	const val = "bar"
 	tmp := t.TempDir()
 	f := filepath.Join(tmp, "noflush.json")
 
@@ -1191,16 +1215,16 @@ func TestEvents_AutoFlushFalse(t *testing.T) {
 		mapstore.WithFileListeners(func(e mapstore.FileEvent) { ev = noTime(e) }),
 	)
 
-	if err := st.SetKey([]string{key}, val); err != nil {
+	if err := st.SetKey([]string{fileStoreFoo}, fileStoreBar); err != nil {
 		t.Fatalf("SetKey: %v", err)
 	}
-	if ev.Op != mapstore.OpSetKey || ev.NewValue != val {
+	if ev.Op != mapstore.OpSetKey || ev.NewValue != fileStoreBar {
 		t.Fatalf("unexpected event %+v", ev)
 	}
 
 	// Reopen - change should NOT be on disk.
 	reopen := openStore(f)
-	if _, err := reopen.GetKey([]string{key}); err == nil {
+	if _, err := reopen.GetKey([]string{fileStoreFoo}); err == nil {
 		t.Fatalf("value persisted although autoFlush was off")
 	}
 
@@ -1209,8 +1233,8 @@ func TestEvents_AutoFlushFalse(t *testing.T) {
 		t.Fatalf("flush: %v", err)
 	}
 	reopen2 := openStore(f)
-	got, err := reopen2.GetKey([]string{key})
-	if err != nil || got != val {
+	got, err := reopen2.GetKey([]string{fileStoreFoo})
+	if err != nil || got != fileStoreBar {
 		t.Fatalf("after flush expected bar, got %v err %v", got, err)
 	}
 }

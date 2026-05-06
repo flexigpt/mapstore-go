@@ -5,6 +5,35 @@ import (
 	"testing"
 )
 
+const (
+	testValue             = "value"
+	testValue1            = "value1"
+	testNotAMap           = "not a map"
+	testBoundaryEmptyKeys = "Boundary case - empty keys"
+	testDataIsNotAMap     = "Error path - data is not a map"
+	testBoundaryDataIsNil = "Boundary case - data is nil"
+	testRoot              = "root"
+	testRootValue         = "rootValue"
+	testStringValue       = "stringValue"
+	testItem1             = "item1"
+	testItem2             = "item2"
+	testEmptyKey          = "emptyKey"
+	testLevel1            = "level1"
+	testLevel2            = "level2"
+	testLevel3            = "level3"
+	testLevel4            = "level4"
+	testDeepValue         = "deepValue"
+	testHappySpecialChars = "Happy path - keys with special characters"
+	testAWithDots         = "a.b"
+	testCWithDots         = "c.d"
+	testNestedValue       = "nestedValue"
+	testNewRootValue      = "newRootValue"
+	testSpecialKeyValue   = "specialKeyValue"
+	testOther             = "other"
+	testOtherValue        = "otherValue"
+	testList              = "list"
+)
+
 // TestGetValueAtPath tests the GetValueAtPath function.
 func TestGetValueAtPath(t *testing.T) {
 	tests := []struct {
@@ -19,12 +48,12 @@ func TestGetValueAtPath(t *testing.T) {
 			data: map[string]any{
 				"a": map[string]any{
 					"b": map[string]any{
-						"c": "value1",
+						"c": testValue1,
 					},
 				},
 			},
 			keys:      []string{"a", "b", "c"},
-			wantValue: "value1",
+			wantValue: testValue1,
 			wantErr:   false,
 		},
 		{
@@ -38,15 +67,15 @@ func TestGetValueAtPath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Error path - path not a map",
+			name: testDataIsNotAMap,
 			data: map[string]any{
-				"a": "not a map",
+				"a": testNotAMap,
 			},
 			keys:    []string{"a", "b"},
 			wantErr: true,
 		},
 		{
-			name: "Boundary case - empty keys",
+			name: testBoundaryEmptyKeys,
 			data: map[string]any{
 				"a": "value3",
 			},
@@ -62,10 +91,10 @@ func TestGetValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - root level key",
 			data: map[string]any{
-				"root": "rootValue",
+				testRoot: testRootValue,
 			},
-			keys:      []string{"root"},
-			wantValue: "rootValue",
+			keys:      []string{testRoot},
+			wantValue: testRootValue,
 			wantErr:   false,
 		},
 		{
@@ -84,7 +113,7 @@ func TestGetValueAtPath(t *testing.T) {
 		{
 			name: "Error path - intermediate path is not a map",
 			data: map[string]any{
-				"a": "stringValue",
+				"a": testStringValue,
 			},
 			keys:    []string{"a", "b"},
 			wantErr: true,
@@ -102,62 +131,47 @@ func TestGetValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - value is a slice",
 			data: map[string]any{
-				"list": []any{"item1", "item2"},
+				testList: []any{testItem1, testItem2},
 			},
-			keys:      []string{"list"},
-			wantValue: []any{"item1", "item2"},
+			keys:      []string{testList},
+			wantValue: []any{testItem1, testItem2},
 			wantErr:   false,
 		},
 		{
 			name: "Boundary case - key is empty string",
 			data: map[string]any{
-				"": "emptyKey",
+				"": testEmptyKey,
 			},
 			keys:      []string{""},
-			wantValue: "emptyKey",
+			wantValue: testEmptyKey,
 			wantErr:   false,
 		},
 		{
-			name:    "Error path - data is not a map",
-			data:    "not a map",
+			name:    testDataIsNotAMap,
+			data:    testNotAMap,
 			keys:    []string{"a"},
 			wantErr: true,
 		},
 		{
-			name: "Happy path - deep nested key",
+			name: testHappySpecialChars,
 			data: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{
-						"level3": map[string]any{
-							"level4": "deepValue",
-						},
-					},
+				testAWithDots: map[string]any{
+					testCWithDots: testDeepValue,
 				},
 			},
-			keys:      []string{"level1", "level2", "level3", "level4"},
-			wantValue: "deepValue",
+			keys:      []string{testAWithDots, testCWithDots},
+			wantValue: testDeepValue,
 			wantErr:   false,
 		},
 		{
 			name: "Error path - nil key in middle",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys:    []string{"a", "", "c"},
 			wantErr: true,
-		},
-		{
-			name: "Happy path - keys with special characters",
-			data: map[string]any{
-				"a.b": map[string]any{
-					"c.d": "specialValue",
-				},
-			},
-			keys:      []string{"a.b", "c.d"},
-			wantValue: "specialValue",
-			wantErr:   false,
 		},
 		{
 			name:    "Boundary case - data is empty map",
@@ -166,7 +180,7 @@ func TestGetValueAtPath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:      "Boundary case - data is nil",
+			name:      testBoundaryDataIsNil,
 			data:      nil,
 			keys:      []string{},
 			wantValue: nil,
@@ -220,11 +234,11 @@ func TestSetValueAtPath(t *testing.T) {
 				"a": map[string]any{},
 			},
 			keys:  []string{"a", "b", "c"},
-			value: "nestedValue",
+			value: testNestedValue,
 			wantData: map[string]any{
 				"a": map[string]any{
 					"b": map[string]any{
-						"c": "nestedValue",
+						"c": testNestedValue,
 					},
 				},
 			},
@@ -233,27 +247,27 @@ func TestSetValueAtPath(t *testing.T) {
 		{
 			name: "Error path - intermediate key is not a map",
 			data: map[string]any{
-				"a": "not a map",
+				"a": testNotAMap,
 			},
 			keys:    []string{"a", "b"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
-			name: "Boundary case - empty keys",
+			name: testBoundaryEmptyKeys,
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:     []string{},
-			value:    "newRootValue",
-			wantData: "newRootValue",
+			value:    testNewRootValue,
+			wantData: testNewRootValue,
 			wantErr:  true,
 		},
 		{
-			name:    "Boundary case - data is nil",
+			name:    testBoundaryDataIsNil,
 			data:    nil,
 			keys:    []string{"a"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
@@ -261,7 +275,7 @@ func TestSetValueAtPath(t *testing.T) {
 			data: map[string]any{},
 			keys: []string{},
 			value: map[string]any{
-				"new": "rootValue",
+				testRoot: testRootValue,
 			},
 			wantData: nil,
 			wantErr:  true,
@@ -281,19 +295,19 @@ func TestSetValueAtPath(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Error path - data is not a map",
-			data:    "not a map",
+			name:    testDataIsNotAMap,
+			data:    testNotAMap,
 			keys:    []string{"a"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
-			name:  "Happy path - keys with special characters",
+			name:  testHappySpecialChars,
 			data:  map[string]any{},
-			keys:  []string{"key.with.dots"},
-			value: "specialKeyValue",
+			keys:  []string{testAWithDots},
+			value: testSpecialKeyValue,
 			wantData: map[string]any{
-				"key.with.dots": "specialKeyValue",
+				testAWithDots: testSpecialKeyValue,
 			},
 			wantErr: false,
 		},
@@ -302,7 +316,7 @@ func TestSetValueAtPath(t *testing.T) {
 			data: nil,
 			keys: []string{},
 			value: map[string]any{
-				"root": "rootValue",
+				testRoot: testRootValue,
 			},
 			wantData: nil,
 			wantErr:  true,
@@ -313,7 +327,7 @@ func TestSetValueAtPath(t *testing.T) {
 				"a": nil,
 			},
 			keys:    []string{"a", "b"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
@@ -322,28 +336,28 @@ func TestSetValueAtPath(t *testing.T) {
 				"a": map[string]any{},
 			},
 			keys:    []string{"a", ""},
-			value:   "emptyKey",
+			value:   testEmptyKey,
 			wantErr: true,
 		},
 		{
 			name: "Error path - cannot set value in a non-map and non-slice type",
 			data: map[string]any{
-				"a": "stringValue",
+				"a": testStringValue,
 			},
 			keys:    []string{"a", "b"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
 			name:  "Happy path - set value at deep nested key",
 			data:  map[string]any{},
-			keys:  []string{"level1", "level2", "level3", "level4"},
-			value: "deepValue",
+			keys:  []string{testLevel1, testLevel2, testLevel3, testLevel4},
+			value: testDeepValue,
 			wantData: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{
-						"level3": map[string]any{
-							"level4": "deepValue",
+				testLevel1: map[string]any{
+					testLevel2: map[string]any{
+						testLevel3: map[string]any{
+							testLevel4: testDeepValue,
 						},
 					},
 				},
@@ -356,33 +370,33 @@ func TestSetValueAtPath(t *testing.T) {
 				"a": map[string]any{},
 			},
 			keys:    []string{"a", "", "c"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
 			name:     "Boundary case - empty data and keys",
 			data:     nil,
 			keys:     []string{},
-			value:    "rootValue",
-			wantData: "rootValue",
+			value:    testRootValue,
+			wantData: testRootValue,
 			wantErr:  true,
 		},
 		{
 			name:  "Happy path - set value in an empty map",
 			data:  map[string]any{},
 			keys:  []string{"a"},
-			value: "value",
+			value: testValue,
 			wantData: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			wantErr: false,
 		},
 		{
 			name: "Error path - set value at invalid index in slice",
 			data: map[string]any{
-				"list": []any{"item1", "item2"},
+				testList: []any{testItem1, testItem2},
 			},
-			keys:    []string{"list", "2"},
+			keys:    []string{testList, "2"},
 			value:   "item3",
 			wantErr: true,
 		},
@@ -390,31 +404,31 @@ func TestSetValueAtPath(t *testing.T) {
 			name:     "Error path - setting value with nil data and keys",
 			data:     nil,
 			keys:     nil,
-			value:    "value",
-			wantData: "value",
+			value:    testValue,
+			wantData: testValue,
 			wantErr:  true,
 		},
 		{
 			name: "Error path - keys is nil",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:     nil,
-			value:    "newRootValue",
-			wantData: "newRootValue",
+			value:    testNewRootValue,
+			wantData: testNewRootValue,
 			wantErr:  true,
 		},
 		{
 			name:    "Error path - setting value in nil map",
 			data:    nil,
 			keys:    []string{"a", "b"},
-			value:   "value",
+			value:   testValue,
 			wantErr: true,
 		},
 		{
 			name: "Boundary case - setting nil value",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:  []string{"a"},
 			value: nil,
@@ -459,7 +473,7 @@ func TestDeleteValueAtPath(t *testing.T) {
 			name: "Happy path - delete existing key",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys: []string{"a", "b"},
@@ -472,12 +486,12 @@ func TestDeleteValueAtPath(t *testing.T) {
 			name: "Happy path - delete non-existent key",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			wantData: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys:    []string{"a", "c"},
@@ -486,24 +500,24 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Error path - intermediate path is not a map",
 			data: map[string]any{
-				"a": "not a map",
+				"a": testNotAMap,
 			},
 			keys:    []string{"a", "b"},
 			wantErr: true,
 		},
 		{
-			name: "Boundary case - empty keys",
+			name: testBoundaryEmptyKeys,
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys: []string{},
 			wantData: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			wantErr: true,
 		},
 		{
-			name:    "Boundary case - data is nil",
+			name:    testBoundaryDataIsNil,
 			data:    nil,
 			keys:    []string{"a"},
 			wantErr: true,
@@ -511,25 +525,25 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - delete root key",
 			data: map[string]any{
-				"root":  "value",
-				"other": "otherValue",
+				testRoot:  testValue,
+				testOther: testOtherValue,
 			},
-			keys: []string{"root"},
+			keys: []string{testRoot},
 			wantData: map[string]any{
-				"other": "otherValue",
+				testOther: testOtherValue,
 			},
 			wantErr: false,
 		},
 		{
-			name:    "Error path - data is not a map",
-			data:    "not a map",
+			name:    testDataIsNotAMap,
+			data:    testNotAMap,
 			keys:    []string{"a"},
 			wantErr: true,
 		},
 		{
 			name: "Happy path - delete key with empty string",
 			data: map[string]any{
-				"": "emptyKey",
+				"": testEmptyKey,
 			},
 			keys:     []string{""},
 			wantData: map[string]any{},
@@ -538,25 +552,25 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - delete key in slice",
 			data: map[string]any{
-				"list": []any{"item1", "item2", "item3"},
+				testList: []any{testItem1, testItem2, "item3"},
 			},
-			keys: []string{"list", "1"},
+			keys: []string{testList, "1"},
 			// Deleting an index in a slice is not supported.
 			wantErr: true,
 		},
 		{
 			name: "Happy path - delete deep nested key",
 			data: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{
-						"level3": "deepValue",
+				testLevel1: map[string]any{
+					testLevel2: map[string]any{
+						testLevel3: testDeepValue,
 					},
 				},
 			},
-			keys: []string{"level1", "level2", "level3"},
+			keys: []string{testLevel1, testLevel2, testLevel3},
 			wantData: map[string]any{
-				"level1": map[string]any{
-					"level2": map[string]any{},
+				testLevel1: map[string]any{
+					testLevel2: map[string]any{},
 				},
 			},
 			wantErr: false,
@@ -565,12 +579,12 @@ func TestDeleteValueAtPath(t *testing.T) {
 			name: "Happy path - nil key in keys",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			wantData: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys:    []string{"a", "", "c"},
@@ -586,12 +600,12 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - delete key with special characters",
 			data: map[string]any{
-				"a.b":   "specialKeyValue",
-				"other": "otherValue",
+				testAWithDots: testSpecialKeyValue,
+				testOther:     testOtherValue,
 			},
-			keys: []string{"a.b"},
+			keys: []string{testAWithDots},
 			wantData: map[string]any{
-				"other": "otherValue",
+				testOther: testOtherValue,
 			},
 			wantErr: false,
 		},
@@ -604,7 +618,7 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Error path - keys is nil",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:    nil,
 			wantErr: true,
@@ -613,12 +627,12 @@ func TestDeleteValueAtPath(t *testing.T) {
 			name: "Happy path - deleting non-existent nested key",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			wantData: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys:    []string{"a", "c"},
@@ -627,7 +641,7 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Boundary case - deleting from non-map type",
 			data: map[string]any{
-				"a": "stringValue",
+				"a": testStringValue,
 			},
 			keys:    []string{"a", "b"},
 			wantErr: true,
@@ -635,11 +649,11 @@ func TestDeleteValueAtPath(t *testing.T) {
 		{
 			name: "Happy path - delete entire data",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys: []string{},
 			wantData: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			// Cannot delete root data.
 			wantErr: true,
@@ -677,35 +691,35 @@ func TestDeepCopyValue(t *testing.T) {
 		{
 			name: "Copy map[string]any",
 			value: map[string]any{
-				"a": "value",
+				"a": testValue,
 				"b": map[string]any{
-					"c": "nestedValue",
+					"c": testNestedValue,
 				},
 			},
 			wantValue: map[string]any{
-				"a": "value",
+				"a": testValue,
 				"b": map[string]any{
-					"c": "nestedValue",
+					"c": testNestedValue,
 				},
 			},
 		},
 		{
 			name: "Copy []any",
 			value: []any{
-				"value1",
+				testValue1,
 				[]any{"nestedValue1", "nestedValue2"},
-				map[string]any{"a": "value"},
+				map[string]any{"a": testValue},
 			},
 			wantValue: []any{
-				"value1",
+				testValue1,
 				[]any{"nestedValue1", "nestedValue2"},
-				map[string]any{"a": "value"},
+				map[string]any{"a": testValue},
 			},
 		},
 		{
 			name:      "Copy string value",
-			value:     "stringValue",
-			wantValue: "stringValue",
+			value:     testStringValue,
+			wantValue: testStringValue,
 		},
 		{
 			name:      "Copy integer value",
@@ -732,7 +746,7 @@ func TestDeepCopyValue(t *testing.T) {
 			value: map[string]any{
 				"a": []any{
 					map[string]any{
-						"b": "value",
+						"b": testValue,
 					},
 				},
 				"c": 123,
@@ -740,7 +754,7 @@ func TestDeepCopyValue(t *testing.T) {
 			wantValue: map[string]any{
 				"a": []any{
 					map[string]any{
-						"b": "value",
+						"b": testValue,
 					},
 				},
 				"c": 123,
@@ -814,7 +828,7 @@ func TestNavigateToParentMap(t *testing.T) {
 		{
 			name: "Error path - path is not a map",
 			data: map[string]any{
-				"a": "not a map",
+				"a": testNotAMap,
 			},
 			keys:          []string{"a", "b"},
 			createMissing: false,
@@ -843,8 +857,8 @@ func TestNavigateToParentMap(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:          "Error path - data is not a map",
-			data:          "not a map",
+			name:          testDataIsNotAMap,
+			data:          testNotAMap,
 			keys:          []string{"a", "b"},
 			createMissing: true,
 			wantErr:       true,
@@ -852,7 +866,7 @@ func TestNavigateToParentMap(t *testing.T) {
 		{
 			name: "Boundary case - empty keys",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:          []string{},
 			createMissing: false,
@@ -860,18 +874,18 @@ func TestNavigateToParentMap(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name: "Happy path - keys with special characters",
+			name: testHappySpecialChars,
 			data: map[string]any{
-				"a.b": map[string]any{
-					"c.d": "value",
+				testAWithDots: map[string]any{
+					testCWithDots: testValue,
 				},
 			},
-			keys:          []string{"a.b", "c.d"},
+			keys:          []string{testAWithDots, testCWithDots},
 			createMissing: false,
 			wantMap: map[string]any{
-				"c.d": "value",
+				testCWithDots: testValue,
 			},
-			wantLastKey: "c.d",
+			wantLastKey: testCWithDots,
 			wantErr:     false,
 		},
 		{
@@ -900,7 +914,7 @@ func TestNavigateToParentMap(t *testing.T) {
 			name: "Error path - non-string key in keys",
 			data: map[string]any{
 				"a": map[string]any{
-					"b": "value",
+					"b": testValue,
 				},
 			},
 			keys:          []string{"a", "", "c"},
@@ -908,7 +922,7 @@ func TestNavigateToParentMap(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name:          "Boundary case - data is nil",
+			name:          testBoundaryDataIsNil,
 			data:          nil,
 			keys:          []string{"a"},
 			createMissing: true,
@@ -925,7 +939,7 @@ func TestNavigateToParentMap(t *testing.T) {
 		},
 		{
 			name:          "Error path - data is not a map and createMissing false",
-			data:          "not a map",
+			data:          testNotAMap,
 			keys:          []string{},
 			createMissing: false,
 			wantErr:       true,
@@ -943,7 +957,7 @@ func TestNavigateToParentMap(t *testing.T) {
 		{
 			name: "Happy path - empty keys",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:          []string{},
 			createMissing: true,
@@ -971,7 +985,7 @@ func TestNavigateToParentMap(t *testing.T) {
 		{
 			name: "Error path - path is not a map and createMissing true",
 			data: map[string]any{
-				"a": "value",
+				"a": testValue,
 			},
 			keys:          []string{"a", "b"},
 			createMissing: true,

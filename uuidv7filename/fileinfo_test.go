@@ -9,6 +9,8 @@ import (
 const (
 	validUUIDv7   = "018f1e3e-7c89-7b4b-8a3b-6f8e8f8e8f8e"
 	fileExtension = "json"
+	chatSuffix    = "Chat"
+	txtExtension  = "txt"
 )
 
 func TestBuild(t *testing.T) {
@@ -27,10 +29,10 @@ func TestBuild(t *testing.T) {
 		{
 			name:       "simple",
 			id:         validUUIDv7,
-			suffix:     "Chat",
+			suffix:     chatSuffix,
 			extension:  fileExtension,
-			wantName:   validUUIDv7 + "_Chat.json",
-			wantSuffix: "Chat",
+			wantName:   validUUIDv7 + "_" + chatSuffix + ".json",
+			wantSuffix: chatSuffix,
 			wantExt:    fileExtension,
 		},
 		{
@@ -54,25 +56,25 @@ func TestBuild(t *testing.T) {
 		{
 			name:       "extension with dot",
 			id:         validUUIDv7,
-			suffix:     "Chat",
+			suffix:     chatSuffix,
 			extension:  ".json",
-			wantName:   validUUIDv7 + "_Chat.json",
-			wantSuffix: "Chat",
+			wantName:   validUUIDv7 + "_" + chatSuffix + ".json",
+			wantSuffix: chatSuffix,
 			wantExt:    fileExtension,
 		},
 		{
 			name:       "long suffix truncated",
 			id:         validUUIDv7,
 			suffix:     longSuffix,
-			extension:  "txt",
-			wantName:   validUUIDv7 + "_" + sanitizedLong[:64] + ".txt",
+			extension:  txtExtension,
+			wantName:   validUUIDv7 + "_" + sanitizedLong[:64] + "." + txtExtension,
 			wantSuffix: sanitizedLong[:64],
-			wantExt:    "txt",
+			wantExt:    txtExtension,
 		},
 		{
 			name:        "missing id",
 			id:          "",
-			suffix:      "Chat",
+			suffix:      chatSuffix,
 			extension:   fileExtension,
 			expectError: true,
 		},
@@ -86,14 +88,14 @@ func TestBuild(t *testing.T) {
 		{
 			name:        "missing extension",
 			id:          validUUIDv7,
-			suffix:      "Chat",
+			suffix:      chatSuffix,
 			extension:   "",
 			expectError: true,
 		},
 		{
 			name:        "invalid uuid",
 			id:          "not-a-uuid",
-			suffix:      "Chat",
+			suffix:      chatSuffix,
 			extension:   fileExtension,
 			expectError: true,
 		},
@@ -156,9 +158,9 @@ func TestParse(t *testing.T) {
 	}{
 		{
 			name:       "valid simple",
-			filename:   validUUIDv7 + "_Chat.json",
+			filename:   validUUIDv7 + "_" + chatSuffix + ".json",
 			wantID:     validUUIDv7,
-			wantSuffix: "Chat",
+			wantSuffix: chatSuffix,
 			wantExt:    fileExtension,
 		},
 		{
@@ -194,9 +196,9 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:       "missing extension",
-			filename:   validUUIDv7 + "_Chat",
+			filename:   validUUIDv7 + "_" + chatSuffix,
 			wantID:     validUUIDv7,
-			wantSuffix: "Chat",
+			wantSuffix: chatSuffix,
 			wantExt:    "",
 		},
 		{
@@ -264,7 +266,7 @@ func TestBuildParse_RoundTrip(t *testing.T) {
 func TestBuildParse_ExtensionVariants(t *testing.T) {
 	id := validUUIDv7
 	suffix := "Test"
-	extensions := []string{fileExtension, ".json", "txt", ".txt"}
+	extensions := []string{fileExtension, ".json", txtExtension, ".txt"}
 	for _, ext := range extensions {
 		info, err := Build(id, suffix, ext)
 		if err != nil {
@@ -312,7 +314,7 @@ func TestParse_InvalidCases(t *testing.T) {
 func TestBuild_InvalidUUIDv7(t *testing.T) {
 	// Valid v4 UUID, not v7.
 	id := "018f1e3e-7c89-4b4b-8a3b-6f8e8f8e8f8e"
-	_, err := Build(id, "Chat", fileExtension)
+	_, err := Build(id, chatSuffix, fileExtension)
 	if err == nil {
 		t.Errorf("expected error for non-v7 UUID, got nil")
 	}
@@ -340,7 +342,7 @@ func TestBuildParse_Suffix64Limit(t *testing.T) {
 
 func TestParse_TimeExtraction(t *testing.T) {
 	id := validUUIDv7
-	suffix := "Chat"
+	suffix := chatSuffix
 	extension := fileExtension
 	info, err := Build(id, suffix, extension)
 	if err != nil {
