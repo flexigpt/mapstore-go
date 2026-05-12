@@ -66,6 +66,17 @@ func DeleteValueAtPath(data any, keys []string) error {
 	return nil
 }
 
+func DeepCopyMap(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
+	}
+	out, ok := DeepCopyValue(in).(map[string]any)
+	if !ok || out == nil {
+		return map[string]any{}
+	}
+	return out
+}
+
 // DeepCopyValue creates a deep copy of an any value.
 func DeepCopyValue(value any) any {
 	switch v := value.(type) {

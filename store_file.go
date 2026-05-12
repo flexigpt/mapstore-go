@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -165,7 +164,7 @@ func NewMapFileStore(
 	}
 	store := &MapFileStore{
 		data:               make(map[string]any),
-		defaultData:        defaultData,
+		defaultData:        maputil.DeepCopyMap(defaultData),
 		filename:           filepath.Clean(filename),
 		autoFlush:          true,
 		fileEncoderDecoder: fileEncoderDecoder,
@@ -389,9 +388,8 @@ func (store *MapFileStore) setAll(data map[string]any) (copyAfter map[string]any
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	// Deep copy the input data to prevent external modifications after setting.
-	store.data = make(map[string]any)
-	maps.Copy(store.data, data)
-	copyAfter, _ = maputil.DeepCopyValue(store.data).(map[string]any)
+	store.data = maputil.DeepCopyMap(data)
+	copyAfter = maputil.DeepCopyMap(store.data)
 
 	if store.autoFlush {
 		if err = store.flushUnlocked(); err != nil {
@@ -405,9 +403,8 @@ func (store *MapFileStore) reset() (copyAfter map[string]any, err error) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 
-	store.data = make(map[string]any)
-	maps.Copy(store.data, store.defaultData)
-	copyAfter, _ = maputil.DeepCopyValue(store.data).(map[string]any)
+	store.data = maputil.DeepCopyMap(store.defaultData)
+	copyAfter = maputil.DeepCopyMap(store.data)
 
 	if err = store.flushUnlocked(); err != nil {
 		return nil, fmt.Errorf("failed to save data after Reset: %w", err)
@@ -445,9 +442,12 @@ func (store *MapFileStore) setKey(
 // createFileIfNotExists checks if a file exists and creates it if it doesn't.
 func (store *MapFileStore) createFileIfNotExists(filename string) error {
 	// Check if the file exists.
-	if _, err := os.Stat(filename); err == nil {
-		// File exists, nothing to do.
-		return nil
+	// A zero-byte file is treated as uninitialized and will be seeded below.
+	if st, err := os.Stat(filename); err == nil {
+		if st.Size() > 0 {
+			// File exists and has content, nothing to do.
+			return nil
+		}
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("failed to stat file %s: %w", filename, err)
 	}
@@ -456,25 +456,26 @@ func (store *MapFileStore) createFileIfNotExists(filename string) error {
 		return fmt.Errorf("file %s does not exist", filename)
 	}
 
-	// Try to create the file atomically.
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o666)
-	if err != nil {
-		if os.IsExist(err) {
-			// Someone else created it first, nothing to do.
-			return nil
-		}
-		return fmt.Errorf("failed to create file %s: %w", filename, err)
-	}
-	// We just wanted to create the file, not write to it directly.
-	f.Close()
-
-	// Copy default data to store.
-	store.data = make(map[string]any)
-	maps.Copy(store.data, store.defaultData)
+	// Do not pre-create the target file as empty.
+	// That exposes a zero-byte file to concurrent readers and can leave one behind if the later flush fails.
+	// "flushUnlocked" already writes via temp file + rename, which is the correct initialization path.
+	store.data = maputil.DeepCopyMap(store.defaultData)
 
 	// Flush the store data to the file.
 	if err := store.flushUnlocked(); err != nil {
-		return fmt.Errorf("failed to flush file %s: %w", filename, err)
+		// Another process may have initialized/published the file after our
+		// initial stat. If a non-empty file now exists, allow the caller's
+		// subsequent load() to read it.
+		if st, statErr := os.Stat(filename); statErr == nil && st.Size() > 0 {
+			return nil
+		} else if statErr != nil && !os.IsNotExist(statErr) {
+			return fmt.Errorf(
+				"failed to stat file %s after init flush error: %w",
+				filename,
+				statErr,
+			)
+		}
+		return fmt.Errorf("failed to initialize file %s: %w", filename, err)
 	}
 
 	return nil
