@@ -11,15 +11,6 @@ tasks:
       - echo "{{.GREETING}}"
     silent: true
 
-  installtools:
-    cmds:
-      # Install task, go, golangci-lint, cloc externally. E.g via asdf. the needed versions are pinned in .tool-versions file.
-      - go install golang.org/x/tools/gopls@v0.23.0
-      - go install github.com/oligot/go-mod-upgrade@v0.12.0
-      - go install github.com/kisielk/godepgraph@v1.0.0
-      - go install github.com/ppipada/refdir@v0.7.1
-      - go install github.com/vladopajic/go-test-coverage/v2@v2.18.8
-
   cloc:
     cmds:
       - |
@@ -27,6 +18,10 @@ tasks:
              --force-lang=Mustache,tmpl --force-lang=INI,env --force-lang=INI,dev --force-lang=INI,prod \
              --exclude_ext=yaml,sum,mod,md5 --not-match-f='LICENSE$|\.gitignore$' \
              .
+
+  tagstats:
+    cmds:
+      - ./scripts/git_tag_stats.sh
 
   checkupgrade:
     cmds:
@@ -37,9 +32,24 @@ tasks:
     cmds:
       - godepgraph -s -o github.com/flexigpt/mapstore-go,command-line-arguments store_directory.go | dot -Tpng -o godepgraph.png
 
-  tagstats:
+  install-tools:
     cmds:
-      - ./scripts/git_tag_stats.sh
+      # Install task, go, golangci-lint, cloc externally. E.g via asdf. the needed versions are pinned in .tool-versions file.
+      - go install golang.org/x/tools/gopls@v0.23.0
+      - go install github.com/oligot/go-mod-upgrade@v0.12.0
+      - go install github.com/kisielk/godepgraph@v1.0.0
+      - go install github.com/ppipada/refdir@v0.7.1
+      - go install github.com/vladopajic/go-test-coverage/v2@v2.18.8
+
+  upgrade-do:
+    cmds:
+      - go-mod-upgrade -v -f
+      - go mod tidy
+
+  upgrade-check:
+    cmds:
+      - gomajor list
+      - go-mod-upgrade -l
 
   lint-gopls:
     cmds:
