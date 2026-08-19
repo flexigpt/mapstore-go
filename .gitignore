@@ -30,7 +30,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
-
+.task
+file_breakdown.txt
 out
 dist
 ignored.txt

@@ -145,7 +145,8 @@ func ExampleMapDirectoryStore_full() {
 		}
 		var s strings.Builder
 		for _, m := range c.Messages {
-			s.WriteString(m.Content + "\n")
+			s.WriteString(m.Content)
+			s.WriteString("\n")
 		}
 		text := s.String()
 
