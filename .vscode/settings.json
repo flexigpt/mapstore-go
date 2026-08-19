@@ -52,16 +52,11 @@
 		"transform": "camelcase"
 	},
 	"gopls": {
-		"build.directoryFilters": ["-docs", "-scripts"],
+		"build.directoryFilters": ["-docs"],
 		"build.buildFlags": ["-tags=integration"]
 	},
 
 	// --- Markdown ---
 	"markdown.extension.toc.levels": "2..4",
-	"markdownlint.config": {
-		"MD030": false,
-		"MD033": {
-			"allowed_elements": ["table", "td", "tr", "strong", "details", "summary"]
-		}
-	}
+	"markdownlint.lintWorkspaceGlobs": ["!LICENSE"]
 }
