@@ -34,5 +34,5 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           args: --verbose
-          version: 2.13.0
+          version: v2.13.0
           install-mode: "goinstall"
