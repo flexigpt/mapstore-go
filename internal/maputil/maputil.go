@@ -52,8 +52,7 @@ func SetValueAtPath(data any, keys []string, value any) error {
 func DeleteValueAtPath(data any, keys []string) error {
 	parentMap, lastKey, err := NavigateToParentMap(data, keys, false)
 	if err != nil {
-		var kne *KeyNotFoundError
-		if errors.As(err, &kne) {
+		if _, ok := errors.AsType[*KeyNotFoundError](err); ok {
 			// Path not found, Delete is a noop in this case.
 			return nil
 		}

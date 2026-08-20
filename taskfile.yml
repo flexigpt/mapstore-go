@@ -4,7 +4,7 @@ version: "3"
 includes:
   go:
     taskfile: https://raw.githubusercontent.com/flexigpt/.github/refs/heads/main/tasks/go.yml
-    checksum: 6c5b0575d175fb76291861cd77e646d1cd94bf1008660f331ec9dfe85ca63166
+    checksum: e4cc5aea758c6d79d92c78021d32a5b8c9cf086933000f3a715b0b83266f99ed
     flatten: true
     dir: "{{.ROOT_DIR}}"
     vars:
