@@ -1,12 +1,12 @@
 module github.com/flexigpt/mapstore-go
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/glebarez/go-sqlite v1.23.0
 	github.com/google/uuid v1.6.0
 	github.com/zalando/go-keyring v0.2.8
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
