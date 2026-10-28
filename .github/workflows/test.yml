@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, windows-2022, macos-15 ]
-        go-source: [ minimum, dev ]
+        os: [ubuntu-26.04, windows-2022, macos-15]
+        go-source: [minimum, dev]
         include:
           - go-source: minimum
             go-version-file: go.mod
@@ -48,17 +48,17 @@ jobs:
         uses: t1m0thyj/unlock-keyring@v1
 
       - name: Test with coverage
-        if: matrix.os == 'ubuntu-24.04' && matrix.go-source == 'dev'
+        if: matrix.os == 'ubuntu-26.04' && matrix.go-source == 'dev'
         run: |
           go test -count=1 -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
       - name: Check test coverage
-        if: matrix.os == 'ubuntu-24.04' && matrix.go-source == 'dev'
+        if: matrix.os == 'ubuntu-26.04' && matrix.go-source == 'dev'
         uses: vladopajic/go-test-coverage@v2
         with:
           config: ./.testcoverage.yml
 
       - name: Test
-        if: matrix.os != 'ubuntu-24.04' || matrix.go-source != 'dev'
+        if: matrix.os != 'ubuntu-26.04' || matrix.go-source != 'dev'
         run: go test ./...
